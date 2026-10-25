@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZapDirect Salões - Envio Rápido no WhatsApp Web</title>
+  <meta name="description" content="Envie mensagens personalizadas no WhatsApp Web para salões de beleza sem precisar salvar o número na agenda.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- SheetJS para ler Excel (.xlsx, .xls) e CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=2.2">
+</head>
+<body class="theme-dark">
+  <div class="app-layout">
+    
+    <!-- Top Header -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-brands fa-whatsapp"></i>
+        </div>
+        <div class="brand-info">
+          <h1>ZapDirect <span>Salões</span></h1>
+          <p>Disparo Direto no WhatsApp Web sem salvar contatos</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button id="themeToggleBtn" class="btn-icon" title="Alternar tema Claro/Escuro">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <button id="btnOpenTemplates" class="btn-secondary">
+          <i class="fa-solid fa-file-pen"></i>
+          <span>Mensagens Padrão</span>
+        </button>
+        <button id="btnHistoryToggle" class="btn-secondary">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Histórico (<span id="historyCountBadge">0</span>)</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BARRA DE MODOS PRINCIPAL (IMPOSSÍVEL DE NÃO VER) -->
+    <nav class="main-mode-navigation" aria-label="Modo de Operação">
+      <button type="button" class="mode-nav-card active" id="btnModeSingle">
+        <div class="mode-card-icon">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div class="mode-card-info">
+          <div class="mode-card-title">Envio Individual (1 a 1)</div>
+          <div class="mode-card-desc">Digite ou cole o número e envie na hora</div>
+        </div>
+      </button>
+
+      <button type="button" class="mode-nav-card" id="btnModeBatch">
+        <div class="mode-card-icon excel-icon">
+          <i class="fa-solid fa-file-excel"></i>
+        </div>
+        <div class="mode-card-info">
+          <div class="mode-card-header-row">
+            <span class="mode-card-title">Disparo por Planilha (Excel / CSV)</span>
+            <span class="badge-anti-ban-pulse">
+              <i class="fa-solid fa-shield-halved"></i> Anti-Ban Ativo
+            </span>
+          </div>
+          <div class="mode-card-desc">Carregue sua lista com intervalo seguro de 1 a 2 min</div>
+        </div>
+      </button>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="main-wrapper">
+      
+      <!-- ================= MODO 1: ENVIO INDIVIDUAL ================= -->
+      <div id="viewSingleMode" class="main-content">
+        <!-- Left Column: Form & Inputs -->
+        <section class="card input-card">
+          <div class="card-header">
+            <div class="badge-tag">
+              <i class="fa-solid fa-bolt"></i> Novo Envio
+            </div>
+            <span class="hint-text"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> para enviar rápido</span>
+          </div>
+
+          <form id="leadForm" autocomplete="off">
+            <!-- WhatsApp Phone -->
+            <div class="form-group highlight-group">
+              <label for="phoneNumber">
+                <i class="fa-brands fa-whatsapp label-icon"></i>
+                <span>Número de WhatsApp</span>
+                <span class="required">*</span>
+              </label>
+              <div class="phone-input-wrapper">
+                <div class="country-prefix" title="Código do Brasil">+55</div>
+                <input 
+                  type="tel" 
+                  id="phoneNumber" 
+                  placeholder="(11) 99999-9999 ou cole qualquer formato"
+                  required
+                  autofocus
+                >
+                <button type="button" id="pastePhoneBtn" class="btn-paste" title="Colar número copiado">
+                  <i class="fa-solid fa-paste"></i>
+                </button>
+              </div>
+              <span class="input-subnote" id="phoneCleanPreview">Digite DDD + Número celular</span>
+            </div>
+
+            <!-- Grid dos Dados do Salão -->
+            <div class="form-grid-2">
+              <!-- Nome da Dona / Responsável -->
+              <div class="form-group">
+                <label for="ownerName">
+                  <i class="fa-solid fa-user label-icon"></i>
+                  <span>Nome da Dona / Responsável</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="ownerName" 
+                  placeholder="Ex: Mariana, Patrícia..." 
+                >
+              </div>
+
+              <!-- Nome do Salão -->
+              <div class="form-group">
+                <label for="salonName">
+                  <i class="fa-solid fa-scissors label-icon"></i>
+                  <span>Nome do Salão</span>
+                  <span class="required">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="salonName" 
+                  placeholder="Ex: Studio Bella Donna..."
+                  required
+                >
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <!-- Nota do Salão -->
+              <div class="form-group">
+                <label for="salonRating">
+                  <i class="fa-solid fa-star label-icon star-color"></i>
+                  <span>Nota no Google</span>
+                </label>
+                <div class="rating-input-container">
+                  <input 
+                    type="text" 
+                    id="salonRating" 
+                    placeholder="Ex: 4.8 ou 5.0" 
+                    value="4.9"
+                  >
+                  <div class="quick-ratings">
+                    <button type="button" class="btn-pill" data-val="5.0">⭐ 5.0</button>
+                    <button type="button" class="btn-pill" data-val="4.9">⭐ 4.9</button>
+                    <button type="button" class="btn-pill" data-val="4.8">⭐ 4.8</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quantidade de Comentários / Avaliações -->
+              <div class="form-group">
+                <label for="reviewCount">
+                  <i class="fa-solid fa-comments label-icon"></i>
+                  <span>Quantidade de Comentários</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="reviewCount" 
+                  placeholder="Ex: 87, 120, +150..." 
+                  value="85"
+                >
+              </div>
+            </div>
+
+            <!-- Saudação Automática / Manual -->
+            <div class="form-group greeting-row">
+              <label class="toggle-control">
+                <input type="checkbox" id="autoGreetingCheck" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Saudação automática por horário (<strong id="currentGreetingPreview">Boa tarde</strong>)</span>
+              </label>
+            </div>
+
+            <!-- Template Selector Quick Switch -->
+            <div class="template-quick-row">
+              <span class="small-title"><i class="fa-solid fa-sliders"></i> Modelo Ativo:</span>
+              <select id="activeTemplateSelect" class="template-dropdown"></select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons-stack">
+              <button type="button" id="btnSendWhatsAppWeb" class="btn-primary-send">
+                <div class="btn-content">
+                  <i class="fa-brands fa-whatsapp send-icon"></i>
+                  <div class="btn-texts">
+                    <span class="btn-main-title">Abrir no WhatsApp Web</span>
+                    <span class="btn-sub-title">Sem cadastrar na agenda • Direto na conversa</span>
+                  </div>
+                </div>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </button>
+
+              <div class="secondary-actions-group">
+                <button type="button" id="btnSendWhatsAppApi" class="btn-action-alt" title="Abrir via wa.me (útil se você usa o app instalado do WhatsApp Desktop)">
+                  <i class="fa-solid fa-mobile-screen"></i>
+                  <span>WhatsApp App / wa.me</span>
+                </button>
+
+                <button type="button" id="btnCopyMessage" class="btn-action-alt">
+                  <i class="fa-regular fa-copy"></i>
+                  <span id="copyBtnText">Copiar Mensagem</span>
+                </button>
+
+                <button type="button" id="btnClearForm" class="btn-action-alt text-danger" title="Limpar campos para próximo salão">
+                  <i class="fa-solid fa-eraser"></i>
+                  <span>Limpar</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- Right Column: Live WhatsApp Chat Simulation -->
+        <section class="card preview-card">
+          <div class="card-header">
+            <div class="header-left">
+              <span class="status-dot"></span>
+              <h3>Prévia em Tempo Real (WhatsApp)</h3>
+            </div>
+            <span class="preview-counter" id="charCounter">0 caracteres</span>
+          </div>
+
+          <div class="whatsapp-mockup-window">
+            <!-- WhatsApp Mockup Topbar -->
+            <div class="wa-chat-header">
+              <div class="wa-avatar">
+                <i class="fa-solid fa-store"></i>
+              </div>
+              <div class="wa-user-details">
+                <div class="wa-contact-name" id="previewContactName">Nome do Salão</div>
+                <div class="wa-contact-status" id="previewContactPhone">+55 (DDD) 99999-9999 • online</div>
+              </div>
+              <div class="wa-header-icons">
+                <i class="fa-solid fa-video"></i>
+                <i class="fa-solid fa-phone"></i>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+            </div>
+
+            <!-- WhatsApp Chat Area -->
+            <div class="wa-chat-canvas" id="waChatCanvas">
+              <div class="wa-encryption-notice">
+                <i class="fa-solid fa-lock"></i>
+                As mensagens são protegidas com criptografia de ponta a ponta.
+              </div>
+
+              <!-- Speech Bubble -->
+              <div class="wa-bubble outgoing">
+                <div class="wa-bubble-content" id="liveMessagePreview">
+                  <!-- Rendered dynamically -->
+                </div>
+                <div class="wa-bubble-meta">
+                  <span id="previewTimestamp">14:32</span>
+                  <span class="wa-ticks">
+                    <i class="fa-solid fa-check-double"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- WhatsApp Mockup Footer -->
+            <div class="wa-fake-footer">
+              <i class="fa-regular fa-face-smile"></i>
+              <i class="fa-solid fa-paperclip"></i>
+              <div class="wa-fake-input">Mensagem digitada automaticamente...</div>
+              <div class="wa-fake-mic">
+                <i class="fa-solid fa-microphone"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tags Reference Guide -->
+          <div class="variables-guide">
+            <h4><i class="fa-solid fa-wand-magic-sparkles"></i> Tags disponíveis no seu texto:</h4>
+            <div class="tags-chips">
+              <button type="button" class="tag-chip" data-tag="{destinatario}" title="Dona ou Nome do Salão">{destinatario}</button>
+              <button type="button" class="tag-chip" data-tag="{nome_salao}" title="Clique para copiar">{nome_salao}</button>
+              <button type="button" class="tag-chip" data-tag="{nome_dona}" title="Clique para copiar">{nome_dona}</button>
+              <button type="button" class="tag-chip" data-tag="{nota_salao}" title="Clique para copiar">{nota_salao}</button>
+              <button type="button" class="tag-chip" data-tag="{qtd_comentarios}" title="Clique para copiar">{qtd_comentarios}</button>
+              <button type="button" class="tag-chip" data-tag="{saudacao}" title="Clique para copiar">{saudacao}</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= MODO 2: DISPARO POR PLANILHA (EXCEL / CSV) ================= -->
+      <div id="viewBatchMode" class="batch-content" style="display: none;">
+        
+        <!-- Top Control Bar: Upload & Anti-Ban Settings -->
+        <div class="batch-top-grid">
+          
+          <!-- Dropzone Card -->
+          <section class="card upload-card">
+            <div class="card-header">
+              <div class="badge-tag">
+                <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha
+              </div>
+              <div class="header-action-btns">
+                <button type="button" id="btnLoadTestData" class="btn-ghost-sm text-success" title="Carregar direto os 2 números de teste (Abel e Nair)">
+                  <i class="fa-solid fa-flask"></i> Carregar Teste (Abel & Nair)
+                </button>
+                <button type="button" id="btnDownloadSample" class="btn-ghost-sm" title="Baixar modelo .xlsx pré-configurado">
+                  <i class="fa-solid fa-download"></i> Baixar Modelo
+                </button>
+              </div>
+            </div>
+
+            <div class="file-dropzone" id="fileDropzone">
+              <input type="file" id="batchFileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+              <div class="dropzone-body">
+                <div class="dropzone-icon">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h4>Arraste sua planilha Excel ou CSV aqui</h4>
+                <p>Suporta arquivos <strong>.xlsx</strong>, <strong>.xls</strong> e <strong>.csv</strong></p>
+                <button type="button" class="btn-secondary" id="btnBrowseFile">
+                  <i class="fa-regular fa-folder-open"></i> Selecionar Arquivo do PC
+                </button>
+              </div>
+              <div class="dropzone-file-info" id="dropzoneFileInfo" style="display: none;">
+                <div class="file-info-badge">
+                  <i class="fa-solid fa-file-excel text-success"></i>
+                  <span id="loadedFileName">salões.xlsx</span>
+                </div>
+                <span class="file-rows-count" id="loadedRowsCount">0 contatos encontrados</span>
+                <button type="button" id="btnRemoveFile" class="btn-icon-sm" title="Remover e escolher outro">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Anti-Ban Configuration Card -->
+          <section class="card anti-ban-card">
+            <div class="card-header">
+              <div class="badge-tag badge-shield">
+                <i class="fa-solid fa-shield-halved"></i> Proteção Anti-Ban WhatsApp
+              </div>
+              <span class="safe-tag"><i class="fa-solid fa-circle-check"></i> Seguro</span>
+            </div>
+
+            <div class="anti-ban-settings">
+              <div class="form-group">
+                <label for="batchIntervalSelect">
+                  <i class="fa-solid fa-hourglass-half label-icon"></i>
+                  <span>Intervalo Entre Envios:</span>
+                </label>
+                <select id="batchIntervalSelect" class="styled-select">
+                  <option value="10">⚡ 10 Segundos • Modo Teste Rápido</option>
+                  <option value="30">🚀 30 Segundos • Teste Rápido</option>
+                  <option value="60">1 Minuto (60s) • Rápido moderado</option>
+                  <option value="90">1 Minuto e meio (90s) • Seguro</option>
+                  <option value="120" selected>2 Minutos (120s) • Altamente Recomendado (Anti-Ban) ⭐</option>
+                  <option value="180">3 Minutos (180s) • Ultra Seguro (Grandes Listas)</option>
+                </select>
+                <span class="input-subnote">
+                  <i class="fa-solid fa-info-circle"></i> O intervalo de 1 a 2 minutos evita que o WhatsApp detecte automação robótica.
+                </span>
+              </div>
+
+              <!-- Humanized Random Variation -->
+              <div class="form-group">
+                <label class="toggle-control">
+                  <input type="checkbox" id="randomJitterCheck" checked>
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">Variação humana aleatória (±15s para simular digitação real)</span>
+                </label>
+              </div>
+
+              <!-- Active Template for Batch -->
+              <div class="form-group">
+                <label for="batchTemplateSelect">
+                  <i class="fa-solid fa-message label-icon"></i>
+                  <span>Modelo de Mensagem a Enviar:</span>
+                </label>
+                <select id="batchTemplateSelect" class="styled-select"></select>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Dispatcher Live Control Panel (When file is loaded) -->
+        <section class="card dispatcher-panel" id="dispatcherPanel">
+          <div class="dispatcher-top-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+            <div class="ext-status-pill offline" id="extStatusPill" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; background: rgba(255,255,255,0.06); border: 1px solid var(--border-color);">
+              <span id="extStatusLabel"><i class="fa-solid fa-spinner fa-spin text-warning"></i> Conectando à Extensão ZapDirect...</span>
+            </div>
+            <span class="text-muted" style="font-size: 12px;"><i class="fa-solid fa-shield-check text-success"></i> Disparos 100% no seu navegador</span>
+          </div>
+
+          <div class="dispatcher-header">
+            <div class="timer-display-box">
+              <div class="timer-ring-icon" id="timerPulseIcon">
+                <i class="fa-solid fa-stopwatch"></i>
+              </div>
+              <div class="timer-texts">
+                <span class="timer-state-label" id="timerStatusLabel">Fila pronta para iniciar</span>
+                <span class="timer-clock" id="timerClockDisplay">02:00</span>
+              </div>
+            </div>
+
+            <div class="dispatcher-stats">
+              <div class="stat-box">
+                <span class="stat-number" id="statSentCount">0</span>
+                <span class="stat-label">Enviados</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-number" id="statRemainingCount">0</span>
+                <span class="stat-label">Restantes</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-number" id="statTotalCount">0</span>
+                <span class="stat-label">Total</span>
+              </div>
+            </div>
+
+            <div class="dispatcher-actions">
+              <button type="button" id="btnStartBatch" class="btn-success-lg">
+                <i class="fa-solid fa-play"></i> Iniciar Disparos
+              </button>
+              <button type="button" id="btnPauseBatch" class="btn-warning-lg" style="display: none;">
+                <i class="fa-solid fa-pause"></i> Pausar
+              </button>
+              <button type="button" id="btnSendNextNow" class="btn-primary" style="display: none;" title="Abrir o próximo contato da fila imediatamente">
+                <i class="fa-solid fa-bolt"></i> Enviar Próximo Agora
+              </button>
+              <button type="button" id="btnSkipCurrent" class="btn-secondary" title="Pular para o próximo da lista">
+                <i class="fa-solid fa-forward-step"></i> Pular
+              </button>
+              <button type="button" id="btnStopBatch" class="btn-danger-outline" title="Interromper fila">
+                <i class="fa-solid fa-stop"></i> Parar
+              </button>
+              <button type="button" id="btnExportBatchCsv" class="btn-secondary" title="Exportar resultado dos envios">
+                <i class="fa-solid fa-file-csv"></i> Relatório
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner Informativo de Envio -->
+          <div class="batch-helper-banner">
+            <i class="fa-solid fa-circle-info"></i>
+            <span><strong>Como funciona:</strong> O WhatsApp Web abre a conversa com o texto pronto. Você só aperta <kbd>Enter</kbd> no teclado para enviar. O sistema aguarda o intervalo anti-ban e chama o próximo contato!</span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="batch-progress-wrapper">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="batchProgressBar" style="width: 0%;"></div>
+            </div>
+            <div class="progress-legend">
+              <span id="batchProgressPercent">0% Concluído</span>
+              <span id="currentProcessingSalon">Aguardando início...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Column Mapping (If detected or needed) -->
+        <section class="card mapping-card" id="mappingCard" style="display: none;">
+          <div class="card-header">
+            <h4><i class="fa-solid fa-table-columns"></i> Mapeamento de Colunas da Planilha</h4>
+            <span class="hint-text">Detectamos as colunas automaticamente. Ajuste se necessário:</span>
+          </div>
+          <div class="mapping-grid">
+            <div class="form-group">
+              <label>Coluna do Telefone *</label>
+              <select id="mapPhoneSelect" class="styled-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Coluna Destinatário / Dona</label>
+              <select id="mapOwnerSelect" class="styled-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Coluna Nome do Salão *</label>
+              <select id="mapSalonSelect" class="styled-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Coluna Nota Google (opcional)</label>
+              <select id="mapRatingSelect" class="styled-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Coluna Avaliações (opcional)</label>
+              <select id="mapReviewsSelect" class="styled-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Coluna "Enviado" (Status Já Enviado)</label>
+              <select id="mapSentSelect" class="styled-select" title="Se preenchido com 'Sim', o sistema pula este contato automaticamente"></select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contacts Table Preview -->
+        <section class="card table-card">
+          <div class="card-header">
+            <div class="header-left">
+              <i class="fa-solid fa-list-check"></i>
+              <h3>Lista de Contatos da Planilha (<span id="tableRowsTotal">0</span>)</h3>
+            </div>
+            <div class="table-filters">
+              <button type="button" class="btn-filter active" data-filter="all">Todos</button>
+              <button type="button" class="btn-filter" data-filter="pending">Pendentes</button>
+              <button type="button" class="btn-filter" data-filter="sent">Enviados</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="batch-table" id="batchTable">
+              <thead>
+                <tr>
+                  <th width="48">#</th>
+                  <th width="120">Status</th>
+                  <th>Destinatário</th>
+                  <th>Nome do Salão</th>
+                  <th>Telefone</th>
+                  <th>Nota / Avaliações</th>
+                  <th width="110">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="batchTableBody">
+                <tr class="empty-table-row">
+                  <td colspan="7">
+                    <div class="empty-batch-state">
+                      <i class="fa-solid fa-file-excel"></i>
+                      <p>Nenhuma planilha importada no momento.<br>Faça o upload do seu arquivo Excel (.xlsx) ou CSV acima para iniciar os disparos.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- Modal: Gerenciador de Mensagem Padrão / Modelos -->
+    <div class="modal-backdrop" id="templateModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-title">
+            <i class="fa-solid fa-sliders"></i>
+            <h3>Editar Mensagens Padrão</h3>
+          </div>
+          <button type="button" class="btn-close-modal" id="btnCloseModal">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="template-manager-toolbar">
+            <div class="form-group flex-1">
+              <label for="templateListSelect">Selecione o Modelo para Editar:</label>
+              <select id="templateListSelect"></select>
+            </div>
+            <button type="button" id="btnNewTemplate" class="btn-secondary">
+              <i class="fa-solid fa-plus"></i> Novo Modelo
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label for="modalTemplateName">Nome do Modelo:</label>
+            <input type="text" id="modalTemplateName" placeholder="Ex: Primeiro Contato Salão">
+          </div>
+
+          <div class="form-group">
+            <div class="label-with-actions">
+              <label for="modalTemplateText">Corpo da Mensagem:</label>
+              <span class="hint-small">Clique nas tags abaixo para inserir:</span>
+            </div>
+            
+            <div class="insert-tags-bar">
+              <button type="button" class="insert-tag-btn" data-insert="{destinatario}">+ {destinatario}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nome_salao}">+ {nome_salao}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nome_dona}">+ {nome_dona}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nota_salao}">+ {nota_salao}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{qtd_comentarios}">+ {qtd_comentarios}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{saudacao}">+ {saudacao}</button>
+            </div>
+
+            <textarea id="modalTemplateText" rows="9" placeholder="Digite a mensagem padrão usando as tags acima..."></textarea>
+            <div class="formatting-hints">
+              Dicas WhatsApp: <code>*negrito*</code>, <code>_itálico_</code>, <code>~tachado~</code>.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnResetDefaultTemplates" class="btn-ghost text-muted">
+            <i class="fa-solid fa-rotate-left"></i> Restaurar Modelos Originais
+          </button>
+          <div class="modal-footer-right">
+            <button type="button" id="btnDeleteTemplate" class="btn-ghost text-danger">
+              <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+            <button type="button" id="btnSaveTemplate" class="btn-primary">
+              <i class="fa-solid fa-check"></i> Salvar Alterações
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer: Histórico de Envios -->
+    <div class="history-drawer" id="historyDrawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <h3>Histórico de Envios</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseHistory">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="drawer-toolbar">
+        <span id="historyTotalLabel">0 salões contatados</span>
+        <button type="button" id="btnClearHistory" class="btn-link-danger">
+          <i class="fa-solid fa-trash-can"></i> Limpar tudo
+        </button>
+      </div>
+
+      <div class="history-list" id="historyListContainer">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+  </div>
+
+  <script src="app.js?v=3.3"></script>
+</body>
+</html>

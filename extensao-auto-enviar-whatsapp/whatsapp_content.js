@@ -1,28 +1,30 @@
 /**
- * ZapDirect WhatsApp Content Script v3.2
- * Roda dentro de https://web.whatsapp.com/*
- * Gerencia envio automático, proteção anti-ban e navegação contínua na fila de contatos.
- * v3.2: Correção de duplo disparo (anti-duplicação por ID e exclusividade de clique).
+ * ZapDirect WhatsApp Automation Script v3.4
+ * Suporta WhatsApp Web e WhatsApp Business Web
+ * Disparo 100% automático em Lote (Planilha) e Individual (1 a 1)
  */
 
-console.log("[ZapDirect WhatsApp v3.2] Script de automação carregado.");
+console.log("[ZapDirect WhatsApp v3.4] Script de automação carregado no WhatsApp Web.");
 
-// Identifica se esta aba foi especificamente aberta pelo disparador em lote do ZapDirect
-if (window.location.search.includes("zap_batch=1")) {
+// 1. Captura da URL inicial IMEDIATAMENTE em document_start antes do WhatsApp reescrever a URL
+const INITIAL_URL = window.location.href;
+const INITIAL_SEARCH = window.location.search;
+
+if (INITIAL_SEARCH.includes("zap_batch=1")) {
   try {
-    sessionStorage.setItem("is_zap_runner", "true");
+    sessionStorage.setItem("is_zap_batch_runner", "true");
   } catch (e) {}
 }
 
-function isCurrentTabRunner() {
+if (INITIAL_URL.includes("phone=") || INITIAL_URL.includes("text=") || INITIAL_URL.includes("zap_auto=1")) {
   try {
-    return window.location.search.includes("zap_batch=1") || sessionStorage.getItem("is_zap_runner") === "true";
-  } catch (e) {
-    return false;
-  }
+    sessionStorage.setItem("zap_single_pending", "true");
+    sessionStorage.setItem("zap_single_target", INITIAL_URL);
+    console.log("[ZapDirect] Auto-envio individual detectado e armado:", INITIAL_URL);
+  } catch (e) {}
 }
 
-// Previne duplo envio do mesmo contato na mesma sessão
+// Previne duplo envio do mesmo contato na mesma sessão em lote
 function hasAlreadySentContact(contactId) {
   try {
     return sessionStorage.getItem("zap_sent_contact_" + contactId) === "true";
@@ -55,7 +57,7 @@ function updateStatusBanner(htmlContent, isDone = false) {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 14px;
       font-weight: 600;
-      z-index: 999999;
+      z-index: 9999999;
       box-shadow: 0 6px 20px rgba(0,0,0,0.35);
       display: flex;
       align-items: center;
@@ -74,12 +76,12 @@ function updateStatusBanner(htmlContent, isDone = false) {
         currentBanner.remove();
         currentBanner = null;
       }
-    }, 6000);
+    }, 5000);
   }
 }
 
 function findSendButton() {
-  // 1. data-icon send oficial
+  // 1. Seletores oficiais de ícone no WhatsApp Web e WhatsApp Business Web
   const sendIcon = document.querySelector('span[data-icon="send"]') ||
                    document.querySelector('span[data-icon="wds-ic-send"]') ||
                    document.querySelector('span[data-icon="send-light"]') ||
@@ -95,13 +97,16 @@ function findSendButton() {
   const ariaBtn = document.querySelector('button[aria-label="Enviar"]') ||
                   document.querySelector('button[aria-label="Send"]') ||
                   document.querySelector('[aria-label="Enviar"]') ||
-                  document.querySelector('[aria-label="Send"]');
+                  document.querySelector('[aria-label="Send"]') ||
+                  document.querySelector('button[data-tab="11"]');
   if (ariaBtn) return ariaBtn;
 
-  // 3. Botão no footer que contenha o ícone do aviãozinho
-  const footerBtns = document.querySelectorAll('footer button, div[role="textbox"] ~ button, div[contenteditable="true"] ~ button');
-  for (const b of footerBtns) {
-    if (b.querySelector('[data-icon="send"]') || b.querySelector('svg path[d*="M1.101"]')) {
+  // 3. Botão no footer que contenha svg e não seja o microfone
+  const footerButtons = document.querySelectorAll('footer button, div[role="textbox"] ~ div button');
+  for (const b of footerButtons) {
+    const hasSendSvg = b.querySelector('svg path[d*="M1.101"]') || b.querySelector('[data-icon="send"]');
+    const isMic = b.querySelector('[data-icon="ptt"]') || b.querySelector('[data-icon="microphone"]') || b.querySelector('[data-icon="audio-mic"]');
+    if (hasSendSvg && !isMic) {
       return b;
     }
   }
@@ -134,46 +139,118 @@ function checkForInvalidNumberModal() {
 
 let isSendingAction = false;
 
-function triggerSendAction() {
-  if (isSendingAction) {
-    console.log("[ZapDirect WhatsApp] Disparo bloqueado: ação já em andamento.");
-    return false;
-  }
+function doTriggerSend() {
+  if (isSendingAction) return false;
   isSendingAction = true;
 
-  // 1. Tenta clicar exclusivamente no botão de enviar oficial
   const sendBtn = findSendButton();
-  if (sendBtn) {
-    sendBtn.click();
-    console.log("[ZapDirect WhatsApp] Botão de envio clicado com sucesso via click().");
-    setTimeout(() => { isSendingAction = false; }, 3000);
-    return true; // Retorna imediatamente! NUNCA dispara Enter se o botão de envio já foi clicado.
-  }
-
-  // 2. Se e somente se o botão não for encontrado, tenta enviar pressionando Enter no campo de texto
   const inputEl = findChatInput();
-  if (inputEl) {
-    inputEl.focus();
-    const eventParams = { bubbles: true, cancelable: true, key: "Enter", code: "Enter", keyCode: 13, which: 13 };
-    inputEl.dispatchEvent(new KeyboardEvent("keydown", eventParams));
-    inputEl.dispatchEvent(new KeyboardEvent("keyup", eventParams));
-    console.log("[ZapDirect WhatsApp] Enter disparado no campo de texto.");
-    setTimeout(() => { isSendingAction = false; }, 3000);
-    return true;
+
+  let sent = false;
+
+  // 1. Tenta clique oficial com a sequência completa de eventos do mouse
+  if (sendBtn) {
+    try {
+      ["pointerdown", "mousedown", "pointerup", "mouseup", "click"].forEach(evtName => {
+        sendBtn.dispatchEvent(new MouseEvent(evtName, {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        }));
+      });
+      sendBtn.click();
+      sent = true;
+      console.log("[ZapDirect WhatsApp] Clique executado no botão de envio!");
+    } catch (e) {
+      console.error("[ZapDirect WhatsApp] Falha no clique:", e);
+    }
   }
 
-  isSendingAction = false;
-  return false;
+  // 2. Dispara também Enter no campo de texto para garantia total
+  if (inputEl) {
+    try {
+      inputEl.focus();
+      const enterParams = { bubbles: true, cancelable: true, key: "Enter", code: "Enter", keyCode: 13, which: 13 };
+      inputEl.dispatchEvent(new KeyboardEvent("keydown", enterParams));
+      inputEl.dispatchEvent(new KeyboardEvent("keyup", enterParams));
+      console.log("[ZapDirect WhatsApp] Enter disparado no campo de mensagem.");
+      sent = true;
+    } catch (e) {
+      console.error("[ZapDirect WhatsApp] Falha no Enter:", e);
+    }
+  }
+
+  setTimeout(() => {
+    isSendingAction = false;
+  }, 2500);
+
+  return sent;
 }
 
+// ========================================================
+// MODO INDIVIDUAL (1 a 1)
+// ========================================================
+let isSingleProcessing = false;
+
+function checkSingleUrlSend() {
+  const isPending = sessionStorage.getItem("zap_single_pending") === "true";
+  if (!isPending) return;
+
+  if (isSingleProcessing) return;
+
+  // Checa se o WhatsApp deu modal de número inválido
+  if (checkForInvalidNumberModal()) {
+    isSingleProcessing = true;
+    sessionStorage.removeItem("zap_single_pending");
+    updateStatusBanner("⚠️ ZapDirect: O número informado não possui WhatsApp.", true);
+    return;
+  }
+
+  const sendBtn = findSendButton();
+  const inputEl = findChatInput();
+  const hasText = inputEl && (inputEl.innerText || inputEl.textContent || "").trim().length > 0;
+
+  // O WhatsApp terminou de carregar a conversa quando o botão de envio está pronto ou o texto foi injetado
+  if (sendBtn || hasText) {
+    isSingleProcessing = true;
+    updateStatusBanner("⚡ ZapDirect: Conversa pronta! Disparando mensagem...");
+
+    // Remove a pendência para não duplicar envio
+    sessionStorage.removeItem("zap_single_pending");
+
+    setTimeout(() => {
+      doTriggerSend();
+      updateStatusBanner("✅ ZapDirect: Mensagem enviada automaticamente com sucesso!", true);
+      console.log("[ZapDirect WhatsApp] Mensagem enviada automaticamente no Modo Individual.");
+
+      // Segunda tentativa preventiva após 900ms caso o botão precisasse de outro ciclo
+      setTimeout(() => {
+        const stillBtn = findSendButton();
+        const stillText = inputEl && (inputEl.innerText || inputEl.textContent || "").trim().length > 0;
+        if (stillBtn && stillText) {
+          console.log("[ZapDirect WhatsApp] Tentando segundo clique preventivo...");
+          doTriggerSend();
+        }
+        isSingleProcessing = false;
+      }, 900);
+    }, 700);
+  } else {
+    // Enquanto o WhatsApp ainda está carregando a conversa
+    if (!currentBanner) {
+      updateStatusBanner("⏳ ZapDirect: Carregando conversa no WhatsApp...");
+    }
+  }
+}
+
+// ========================================================
+// MODO EM LOTE (PLANILHA)
+// ========================================================
 let isProcessingContact = false;
 let activeCountdownInterval = null;
 
-function checkAndProcessQueue() {
-  // Se esta aba não é a aba oficial de disparo do ZapDirect, ignora a fila em lote
-  if (!isCurrentTabRunner()) {
-    return;
-  }
+function checkBatchQueue() {
+  const isBatch = sessionStorage.getItem("is_zap_batch_runner") === "true" || window.location.search.includes("zap_batch=1");
+  if (!isBatch) return;
 
   if (isProcessingContact) return;
 
@@ -183,12 +260,8 @@ function checkAndProcessQueue() {
     const status = data.zapBatchStatus || "idle";
     const currentIndex = (typeof data.zapCurrentIndex === "number") ? data.zapCurrentIndex : 0;
 
-    // Se a fila não está rodando, não faz nada no executor em lote
-    if (status !== "running") {
-      return;
-    }
+    if (status !== "running") return;
 
-    // Se já finalizou todos os contatos
     if (currentIndex >= queue.length) {
       updateStatusBanner("🎉 ZapDirect: Todos os contatos da planilha foram enviados!", true);
       chrome.storage.local.set({ zapBatchStatus: "finished" });
@@ -198,12 +271,8 @@ function checkAndProcessQueue() {
     const currentContact = queue[currentIndex];
     if (!currentContact) return;
 
-    // Se este contato já foi enviado nesta aba, não envia de novo
-    if (hasAlreadySentContact(currentContact.id)) {
-      return;
-    }
+    if (hasAlreadySentContact(currentContact.id)) return;
 
-    // Detecta se o WhatsApp informou que o número é inválido
     if (checkForInvalidNumberModal()) {
       isProcessingContact = true;
       markContactAsSent(currentContact.id);
@@ -218,20 +287,16 @@ function checkAndProcessQueue() {
     const sendBtn = findSendButton();
     const hasText = inputEl && (inputEl.innerText || inputEl.textContent || "").trim().length > 0;
 
-    // Quando o texto estiver preenchido no chat ou o botão de enviar aparecer
     if (sendBtn || hasText) {
       isProcessingContact = true;
-      // Trava IMEDIATAMENTE para que nenhum timer subsequente dispare novamente
       markContactAsSent(currentContact.id);
 
       updateStatusBanner(`⚡ ZapDirect: [${currentIndex + 1}/${queue.length}] Enviando para <strong>${currentContact.ownerName || currentContact.salonName}</strong>...`);
 
       setTimeout(() => {
-        // Executa o disparo uma única vez
-        triggerSendAction();
+        doTriggerSend();
         console.log(`[ZapDirect WhatsApp] Mensagem enviada para: ${currentContact.cleanPhone} (${currentContact.salonName})`);
 
-        // Notifica o armazenamento local para atualizar o painel do sistema
         chrome.storage.local.set({
           zapContactSent: {
             id: currentContact.id,
@@ -240,12 +305,10 @@ function checkAndProcessQueue() {
           }
         });
 
-        // Aguarda confirmação do WhatsApp antes de iniciar a contagem regressiva anti-ban
         setTimeout(() => {
           advanceQueueToNext(currentIndex, queue, config);
         }, 1800);
-
-      }, 1200);
+      }, 1000);
     }
   });
 }
@@ -304,14 +367,11 @@ function advanceQueueToNext(currentIndex, queue, config) {
 
         updateStatusBanner(`🚀 Carregando conversa de <strong>${nextContact.ownerName || nextContact.salonName}</strong>...`);
 
-        // Atualiza o índice do contato atual no storage
         chrome.storage.local.set({ zapCurrentIndex: nextIndex }, () => {
           const nextUrl = `https://web.whatsapp.com/send?phone=${nextContact.cleanPhone}&text=${encodeURIComponent(nextContact.message)}&zap_batch=1`;
           console.log("[ZapDirect WhatsApp] Navegando aba para o próximo contato:", nextUrl);
 
           isProcessingContact = false;
-
-          // Navega a própria aba para a próxima conversa sem bloqueios de pop-up
           window.location.href = nextUrl;
         });
       }
@@ -319,77 +379,15 @@ function advanceQueueToNext(currentIndex, queue, config) {
   }, 1000);
 }
 
-// Suporte para envio avulso via link direto (Modo Individual 1 a 1)
-let isSingleSending = false;
-let singleSentUrls = new Set();
-
-function checkSingleUrlSend() {
-  const url = window.location.href;
-  
-  // Se não tem telefone ou texto na URL, não é envio do ZapDirect
-  if (!url.includes("phone=") && !url.includes("send?phone=")) return;
-
-  // Se já foi enviado para esta URL nesta sessão
-  if (singleSentUrls.has(url) || sessionStorage.getItem("zap_single_sent") === url) {
-    return;
-  }
-
-  if (isSingleSending) return;
-
-  // Detecta se número é inválido
-  if (checkForInvalidNumberModal()) {
-    isSingleSending = true;
-    singleSentUrls.add(url);
-    sessionStorage.setItem("zap_single_sent", url);
-    updateStatusBanner("⚠️ ZapDirect: O número informado não possui WhatsApp.", true);
-    return;
-  }
-
-  const sendBtn = findSendButton();
-  const inputEl = findChatInput();
-  const hasText = inputEl && (inputEl.innerText || inputEl.textContent || "").trim().length > 0;
-
-  // Quando o botão de enviar aparecer ou o texto estiver preenchido no chat
-  if (sendBtn || hasText) {
-    isSingleSending = true;
-    singleSentUrls.add(url);
-    sessionStorage.setItem("zap_single_sent", url);
-
-    updateStatusBanner("⚡ ZapDirect: Disparando mensagem automaticamente...");
-
-    setTimeout(() => {
-      const clicked = triggerSendAction();
-      if (clicked) {
-        updateStatusBanner("✅ ZapDirect: Mensagem enviada automaticamente com sucesso!", true);
-        console.log("[ZapDirect WhatsApp] Mensagem enviada no modo individual!");
-      } else {
-        // Segunda tentativa caso o botão demorou alguns milissegundos a mais
-        setTimeout(() => {
-          triggerSendAction();
-          updateStatusBanner("✅ ZapDirect: Mensagem enviada automaticamente!", true);
-        }, 800);
-      }
-
-      setTimeout(() => {
-        isSingleSending = false;
-      }, 3000);
-    }, 700);
-  } else {
-    // Se a URL veio do ZapDirect com zap_auto=1 mas ainda está carregando o chat
-    if (url.includes("zap_auto=1") && !currentBanner) {
-      updateStatusBanner("⏳ ZapDirect: Carregando conversa no WhatsApp Web...");
-    }
-  }
-}
-
 // Loop principal de verificação contínua
 function mainLoop() {
-  if (isCurrentTabRunner()) {
-    checkAndProcessQueue();
+  const isBatch = sessionStorage.getItem("is_zap_batch_runner") === "true" || window.location.search.includes("zap_batch=1");
+  if (isBatch) {
+    checkBatchQueue();
   } else {
     checkSingleUrlSend();
   }
 }
 
-// Inicia verificação contínua a cada 600ms
-setInterval(mainLoop, 600);
+// Inicia verificação contínua a cada 500ms
+setInterval(mainLoop, 500);

@@ -31,6 +31,11 @@ const DEFAULT_TEMPLATES = [
     text: "Olá {destinatario}, {saudacao}!\n\nVi as avaliações do *{nome_salao}* e achei sensacional a nota de vocês (*{nota_salao}* estrelas com *{qtd_comentarios} clientes comentando*).\n\nVocê é a responsável pelo salão no momento? Tenho uma proposta bem legal voltada para o seu perfil de atendimento."
   },
   {
+    id: "template-personalizado",
+    name: "✨ Elogio & Abordagem Personalizada (Novo)",
+    text: "Olá, {destinatario}! {saudacao}!\n\nVi o perfil do *{nome_salao}* no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*){personalizado}.\n\nTrabalho desenvolvendo sistemas de agendamento automático e lembretes para salões de destaque. Você teria 1 minuto para dar uma olhadinha em uma demonstração sem compromisso?"
+  },
+  {
     id: "template-padrao-3",
     name: "Primeiro Toque (Super Rápido)",
     text: "{saudacao}! É a responsável do *{nome_salao}*?\n\nVi que vocês são muito bem avaliados no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*) e gostaria de trocar uma ideia rápida com você quando tiver um tempinho!"
@@ -43,6 +48,7 @@ class ZapSalonsApp {
     this.activeTemplateId = null;
     this.history = [];
     this.theme = "dark";
+    this.isCustomEdited = false;
 
     // Batch Mode State
     this.currentMode = "single"; // "single" | "batch"
@@ -81,6 +87,16 @@ class ZapSalonsApp {
     this.autoGreetingCheck = document.getElementById("autoGreetingCheck");
     this.currentGreetingPreview = document.getElementById("currentGreetingPreview");
     this.activeTemplateSelect = document.getElementById("activeTemplateSelect");
+    this.btnEditCurrentTemplate = document.getElementById("btnEditCurrentTemplate");
+    this.btnCreateNewTemplate = document.getElementById("btnCreateNewTemplate");
+
+    // Custom Message & Notes
+    this.customNoteInput = document.getElementById("customNote");
+    this.singleMessageText = document.getElementById("singleMessageText");
+    this.msgCustomBadge = document.getElementById("msgCustomBadge");
+    this.btnSaveAsNewTemplate = document.getElementById("btnSaveAsNewTemplate");
+    this.btnResetMessage = document.getElementById("btnResetMessage");
+    this.msgInputCounter = document.getElementById("msgInputCounter");
 
     // Preview
     this.liveMessagePreview = document.getElementById("liveMessagePreview");
@@ -110,6 +126,7 @@ class ZapSalonsApp {
     this.btnNewTemplate = document.getElementById("btnNewTemplate");
     this.modalTemplateName = document.getElementById("modalTemplateName");
     this.modalTemplateText = document.getElementById("modalTemplateText");
+    this.modalCharCounter = document.getElementById("modalCharCounter");
     this.btnSaveTemplate = document.getElementById("btnSaveTemplate");
     this.btnDeleteTemplate = document.getElementById("btnDeleteTemplate");
     this.btnResetDefaultTemplates = document.getElementById("btnResetDefaultTemplates");
@@ -138,6 +155,8 @@ class ZapSalonsApp {
     this.batchIntervalSelect = document.getElementById("batchIntervalSelect");
     this.randomJitterCheck = document.getElementById("randomJitterCheck");
     this.batchTemplateSelect = document.getElementById("batchTemplateSelect");
+    this.btnBatchEditTemplate = document.getElementById("btnBatchEditTemplate");
+    this.btnBatchNewTemplate = document.getElementById("btnBatchNewTemplate");
 
     this.timerPulseIcon = document.getElementById("timerPulseIcon");
     this.timerStatusLabel = document.getElementById("timerStatusLabel");
@@ -254,11 +273,25 @@ class ZapSalonsApp {
       this.salonNameInput,
       this.salonRatingInput,
       this.reviewCountInput,
-      this.autoGreetingCheck
-    ];
+      this.autoGreetingCheck,
+      this.customNoteInput
+    ].filter(Boolean);
+
     inputs.forEach(input => {
-      input.addEventListener("input", () => this.updatePreview());
-      input.addEventListener("change", () => this.updatePreview());
+      input.addEventListener("input", () => {
+        if (!this.isCustomEdited) {
+          this.updatePreview();
+        } else {
+          this.updateMockupContactHeader();
+        }
+      });
+      input.addEventListener("change", () => {
+        if (!this.isCustomEdited) {
+          this.updatePreview();
+        } else {
+          this.updateMockupContactHeader();
+        }
+      });
     });
 
     // Rating pills
@@ -268,14 +301,16 @@ class ZapSalonsApp {
         this.salonRatingInput.value = val;
         document.querySelectorAll(".btn-pill").forEach(p => p.classList.remove("active"));
         e.currentTarget.classList.add("active");
-        this.updatePreview();
+        if (!this.isCustomEdited) {
+          this.updatePreview();
+        }
       });
     });
 
     // Formatting Phone Input while typing
     this.phoneInput.addEventListener("input", (e) => {
       this.formatPhoneInputDisplay(e.target);
-      this.updatePreview();
+      this.updateMockupContactHeader();
     });
 
     // Paste Phone button
@@ -285,7 +320,7 @@ class ZapSalonsApp {
         if (text) {
           this.phoneInput.value = text;
           this.formatPhoneInputDisplay(this.phoneInput);
-          this.updatePreview();
+          this.updateMockupContactHeader();
           this.showToast("Número colado da área de transferência!", "success");
         }
       } catch (err) {
@@ -293,12 +328,52 @@ class ZapSalonsApp {
       }
     });
 
+    // Custom Message Textarea Input
+    if (this.singleMessageText) {
+      this.singleMessageText.addEventListener("input", () => {
+        this.isCustomEdited = true;
+        this.updateCustomStatusBadge(true);
+        this.updatePreview();
+      });
+    }
+
+    // Reset to Template Button
+    if (this.btnResetMessage) {
+      this.btnResetMessage.addEventListener("click", () => {
+        this.isCustomEdited = false;
+        this.updatePreview();
+        this.showToast("Mensagem restaurada do modelo padrão!", "info");
+      });
+    }
+
+    // Quick Tags Insert Buttons
+    document.querySelectorAll(".btn-insert-tag").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const tag = e.currentTarget.getAttribute("data-insert");
+        this.insertAtCursor(this.singleMessageText, tag);
+        this.showToast(`Tag ${tag} inserida na mensagem!`, "info");
+      });
+    });
+
+    // Quick Emojis
+    document.querySelectorAll(".btn-quick-emoji").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const emoji = e.currentTarget.getAttribute("data-emoji");
+        this.insertAtCursor(this.singleMessageText, emoji);
+      });
+    });
+
     // Quick tag chips in preview
     document.querySelectorAll(".tag-chip").forEach(chip => {
       chip.addEventListener("click", (e) => {
         const tag = e.currentTarget.getAttribute("data-tag");
-        navigator.clipboard.writeText(tag);
-        this.showToast(`Tag ${tag} copiada! Cole no seu modelo.`, "info");
+        if (this.singleMessageText) {
+          this.insertAtCursor(this.singleMessageText, tag);
+          this.showToast(`Tag ${tag} inserida na mensagem!`, "info");
+        } else {
+          navigator.clipboard.writeText(tag);
+          this.showToast(`Tag ${tag} copiada! Cole no seu modelo.`, "info");
+        }
       });
     });
 
@@ -306,6 +381,7 @@ class ZapSalonsApp {
     this.activeTemplateSelect.addEventListener("change", (e) => {
       this.activeTemplateId = e.target.value;
       localStorage.setItem("zapsalons_active_template", this.activeTemplateId);
+      this.isCustomEdited = false; // Carrega o modelo selecionado
       this.updatePreview();
     });
 
@@ -322,6 +398,45 @@ class ZapSalonsApp {
         this.handleSendWhatsApp("web");
       }
     });
+
+    // Quick template actions next to activeTemplateSelect
+    if (this.btnEditCurrentTemplate) {
+      this.btnEditCurrentTemplate.addEventListener("click", () => {
+        this.openTemplateModal(this.activeTemplateSelect ? this.activeTemplateSelect.value : null);
+      });
+    }
+    if (this.btnCreateNewTemplate) {
+      this.btnCreateNewTemplate.addEventListener("click", () => {
+        this.handleNewTemplate();
+      });
+    }
+
+    // Save customized textarea directly as a new template
+    if (this.btnSaveAsNewTemplate) {
+      this.btnSaveAsNewTemplate.addEventListener("click", () => {
+        this.handleSaveCustomAsTemplate();
+      });
+    }
+
+    // Batch quick template actions
+    if (this.btnBatchEditTemplate) {
+      this.btnBatchEditTemplate.addEventListener("click", () => {
+        const tId = this.batchTemplateSelect ? this.batchTemplateSelect.value : this.activeTemplateId;
+        this.openTemplateModal(tId);
+      });
+    }
+    if (this.btnBatchNewTemplate) {
+      this.btnBatchNewTemplate.addEventListener("click", () => {
+        this.handleNewTemplate();
+      });
+    }
+
+    // Modal template textarea character counter
+    if (this.modalTemplateText) {
+      this.modalTemplateText.addEventListener("input", () => {
+        this.updateModalCharCounter();
+      });
+    }
 
     // Template Modal events
     this.btnOpenTemplates.addEventListener("click", () => this.openTemplateModal());
@@ -421,7 +536,7 @@ class ZapSalonsApp {
     }
   }
 
-  // --- Message Generation ---
+  // --- Message Generation & Customization ---
   getCurrentTemplate() {
     let t = this.templates.find(item => item.id === this.activeTemplateId);
     if (!t && this.templates.length > 0) {
@@ -430,18 +545,42 @@ class ZapSalonsApp {
     return t;
   }
 
-  buildMessageText() {
-    const template = this.getCurrentTemplate();
-    if (!template) return "";
+  insertAtCursor(inputEl, textToInsert) {
+    if (!inputEl) return;
+    inputEl.focus();
+    const start = inputEl.selectionStart !== undefined ? inputEl.selectionStart : inputEl.value.length;
+    const end = inputEl.selectionEnd !== undefined ? inputEl.selectionEnd : inputEl.value.length;
+    const text = inputEl.value;
+    inputEl.value = text.substring(0, start) + textToInsert + text.substring(end);
+    const newPos = start + textToInsert.length;
+    inputEl.selectionStart = inputEl.selectionEnd = newPos;
+    this.isCustomEdited = true;
+    this.updateCustomStatusBadge(true);
+    this.updatePreview();
+  }
 
-    let text = template.text;
+  updateCustomStatusBadge(isCustom) {
+    if (!this.msgCustomBadge) return;
+    if (isCustom) {
+      this.msgCustomBadge.className = "badge-custom-status edited";
+      this.msgCustomBadge.innerHTML = '<i class="fa-solid fa-pen"></i> Mensagem Personalizada';
+    } else {
+      this.msgCustomBadge.className = "badge-custom-status synced";
+      this.msgCustomBadge.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Modo Automático';
+    }
+  }
+
+  replaceTagsInText(rawText) {
+    if (!rawText) return "";
+    let text = rawText;
 
     // Variables replacement
-    const greeting = this.autoGreetingCheck.checked ? this.getGreeting() : "Olá";
-    const ownerName = this.ownerNameInput.value.trim();
-    const salonName = this.salonNameInput.value.trim() || "seu salão";
-    const salonRating = this.salonRatingInput.value.trim() || "5.0";
-    const reviewCount = this.reviewCountInput.value.trim() || "várias";
+    const greeting = this.autoGreetingCheck && this.autoGreetingCheck.checked ? this.getGreeting() : "Olá";
+    const ownerName = this.ownerNameInput ? this.ownerNameInput.value.trim() : "";
+    const salonName = (this.salonNameInput && this.salonNameInput.value.trim()) || "seu salão";
+    const salonRating = (this.salonRatingInput && this.salonRatingInput.value.trim()) || "5.0";
+    const reviewCount = (this.reviewCountInput && this.reviewCountInput.value.trim()) || "várias";
+    const customNote = (this.customNoteInput && this.customNoteInput.value.trim()) || "";
 
     // Destinatário inteligente: se tiver a dona preenchida, usa a dona. Se não tiver, usa o nome do salão!
     const destinatario = ownerName ? ownerName : salonName;
@@ -453,11 +592,34 @@ class ZapSalonsApp {
     text = text.replaceAll("{nota_salao}", salonRating);
     text = text.replaceAll("{qtd_comentarios}", reviewCount);
 
-    // Clean any double spaces caused by missing name
+    if (customNote) {
+      text = text.replaceAll("{personalizado}", ", " + customNote);
+    } else {
+      text = text.replaceAll("{personalizado}", "");
+    }
+
+    // Limpa espaços duplos ou vírgulas órfãs
     text = text.replace(/ ,/g, ",");
     text = text.replace(/  +/g, " ");
 
     return text;
+  }
+
+  buildMessageFromTemplate() {
+    const template = this.getCurrentTemplate();
+    if (!template) return "";
+    return this.replaceTagsInText(template.text);
+  }
+
+  buildMessageText() {
+    return this.getEffectiveMessage();
+  }
+
+  getEffectiveMessage() {
+    if (this.singleMessageText && this.singleMessageText.value.trim()) {
+      return this.replaceTagsInText(this.singleMessageText.value);
+    }
+    return this.buildMessageFromTemplate();
   }
 
   formatForWhatsAppHtml(text) {
@@ -480,14 +642,7 @@ class ZapSalonsApp {
     return safe.replace(/\n/g, "<br>");
   }
 
-  updatePreview() {
-    this.updateGreetingText();
-    const message = this.buildMessageText();
-
-    this.liveMessagePreview.innerHTML = this.formatForWhatsAppHtml(message);
-    this.charCounter.textContent = `${message.length} caracteres`;
-
-    // Update WhatsApp Mockup Header
+  updateMockupContactHeader() {
     const salonName = this.salonNameInput.value.trim();
     const ownerName = this.ownerNameInput.value.trim();
     if (salonName) {
@@ -504,6 +659,28 @@ class ZapSalonsApp {
     }
   }
 
+  updatePreview() {
+    this.updateGreetingText();
+
+    // Se o usuário não editou manualmente, mantém sincronizado com os inputs e modelo
+    if (!this.isCustomEdited && this.singleMessageText) {
+      this.singleMessageText.value = this.buildMessageFromTemplate();
+      this.updateCustomStatusBadge(false);
+    }
+
+    const effectiveMessage = this.getEffectiveMessage();
+    const rawLen = this.singleMessageText ? this.singleMessageText.value.length : effectiveMessage.length;
+
+    this.liveMessagePreview.innerHTML = this.formatForWhatsAppHtml(effectiveMessage);
+    this.charCounter.textContent = `${effectiveMessage.length} caracteres`;
+
+    if (this.msgInputCounter) {
+      this.msgInputCounter.textContent = `${rawLen} caracteres`;
+    }
+
+    this.updateMockupContactHeader();
+  }
+
   // --- WhatsApp Sending ---
   handleSendWhatsApp(targetType = "web") {
     const cleanPhone = this.cleanPhoneNumber(this.phoneInput.value);
@@ -514,9 +691,9 @@ class ZapSalonsApp {
       return;
     }
 
-    const message = this.buildMessageText();
+    const message = this.getEffectiveMessage();
     if (!message) {
-      this.showToast("A mensagem está vazia. Verifique o modelo cadastrado.", "error");
+      this.showToast("A mensagem está vazia. Escreva ou escolha um modelo.", "error");
       return;
     }
 
@@ -541,18 +718,18 @@ class ZapSalonsApp {
       ownerName: this.ownerNameInput.value.trim(),
       rating: this.salonRatingInput.value.trim(),
       reviews: this.reviewCountInput.value.trim(),
-      templateName: this.getCurrentTemplate()?.name || "Padrão",
+      templateName: this.isCustomEdited ? "Personalizada (Individual)" : (this.getCurrentTemplate()?.name || "Padrão"),
       timestamp: new Date().toISOString()
     });
 
-    this.showToast("Abrindo WhatsApp! Conversa iniciada sem salvar número.", "success");
+    this.showToast("Abrindo WhatsApp! Conversa iniciada com a mensagem personalizada.", "success");
   }
 
   handleCopyMessage() {
-    const message = this.buildMessageText();
+    const message = this.getEffectiveMessage();
     navigator.clipboard.writeText(message).then(() => {
       this.copyBtnText.textContent = "Copiado!";
-      this.showToast("Mensagem copiada para a área de transferência!", "success");
+      this.showToast("Mensagem personalizada copiada!", "success");
       setTimeout(() => {
         this.copyBtnText.textContent = "Copiar Mensagem";
       }, 2000);
@@ -565,7 +742,11 @@ class ZapSalonsApp {
     this.phoneInput.value = "";
     this.salonNameInput.value = "";
     this.ownerNameInput.value = "";
+    if (this.customNoteInput) {
+      this.customNoteInput.value = "";
+    }
     this.phoneCleanPreview.textContent = "Digite DDD + Número de telefone";
+    this.isCustomEdited = false;
     this.phoneInput.focus();
     this.updatePreview();
     this.showToast("Formulário limpo para o próximo salão!", "info");
@@ -594,9 +775,12 @@ class ZapSalonsApp {
     });
   }
 
-  openTemplateModal() {
+  openTemplateModal(templateId = null) {
     this.renderModalTemplateSelect();
-    this.loadTemplateIntoModal(this.activeTemplateId);
+    const idToLoad = templateId || this.activeTemplateId || (this.templates[0] ? this.templates[0].id : null);
+    if (idToLoad) {
+      this.loadTemplateIntoModal(idToLoad);
+    }
     this.templateModal.classList.add("open");
   }
 
@@ -620,24 +804,37 @@ class ZapSalonsApp {
       this.templateListSelect.value = template.id;
       this.modalTemplateName.value = template.name;
       this.modalTemplateText.value = template.text;
+      this.updateModalCharCounter();
+    }
+  }
+
+  updateModalCharCounter() {
+    if (this.modalCharCounter && this.modalTemplateText) {
+      this.modalCharCounter.textContent = `${this.modalTemplateText.value.length} caracteres`;
     }
   }
 
   handleNewTemplate() {
-    const newId = "template-" + Date.now();
-    const newTemplate = {
-      id: newId,
-      name: "Novo Modelo " + (this.templates.length + 1),
-      text: "{saudacao}, {nome_dona}!\n\nVi as ótimas avaliações do *{nome_salao}* no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*).\n\nGostaria de te apresentar uma novidade exclusiva para salões da nossa região!"
-    };
-    this.templates.push(newTemplate);
-    this.activeTemplateId = newId;
-    this.saveTemplates();
-    this.renderActiveTemplateOptions();
     this.renderModalTemplateSelect();
-    this.loadTemplateIntoModal(newId);
-    this.updatePreview();
-    this.showToast("Novo modelo criado! Personalize o texto.", "success");
+    const newId = "template-custom-" + Date.now();
+
+    // Adiciona temporariamente a nova opção no topo do seletor
+    const opt = document.createElement("option");
+    opt.value = newId;
+    opt.textContent = "✨ [Nova Mensagem a Criar]";
+    opt.selected = true;
+    this.templateListSelect.insertBefore(opt, this.templateListSelect.firstChild);
+    this.templateListSelect.value = newId;
+
+    this.modalTemplateName.value = "";
+    this.modalTemplateName.placeholder = "Ex: Abordagem Google - Foco em Agendamento";
+    this.modalTemplateText.value = "{saudacao}, {destinatario}!\n\nEstava analisando o perfil do *{nome_salao}* no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*)...\n\n";
+    this.updateModalCharCounter();
+
+    this.templateModal.classList.add("open");
+    setTimeout(() => {
+      this.modalTemplateName.focus();
+    }, 120);
   }
 
   handleSaveModalTemplate() {
@@ -646,21 +843,67 @@ class ZapSalonsApp {
     const text = this.modalTemplateText.value.trim();
 
     if (!name || !text) {
-      this.showToast("Nome e corpo do modelo são obrigatórios!", "error");
+      this.showToast("Nome e texto do modelo são obrigatórios!", "error");
       return;
     }
 
     const tIndex = this.templates.findIndex(t => t.id === selectedId);
+    let targetId = selectedId;
+
     if (tIndex >= 0) {
+      // Alterando modelo existente
       this.templates[tIndex].name = name;
       this.templates[tIndex].text = text;
       this.activeTemplateId = selectedId;
-      this.saveTemplates();
-      this.renderActiveTemplateOptions();
-      this.updatePreview();
-      this.closeTemplateModal();
-      this.showToast("Mensagem padrão atualizada com sucesso!", "success");
+    } else {
+      // Incluindo novo modelo
+      targetId = selectedId || ("template-custom-" + Date.now());
+      const newTemplate = {
+        id: targetId,
+        name: name,
+        text: text
+      };
+      this.templates.push(newTemplate);
+      this.activeTemplateId = targetId;
     }
+
+    this.saveTemplates();
+    this.renderActiveTemplateOptions();
+    this.isCustomEdited = false; // Garante exibição do texto atualizado
+    if (this.singleMessageText) {
+      this.singleMessageText.value = this.buildMessageFromTemplate();
+      this.updateCustomStatusBadge(false);
+    }
+    this.updatePreview();
+    this.closeTemplateModal();
+    this.showToast("Mensagem padrão salva com sucesso!", "success");
+  }
+
+  handleSaveCustomAsTemplate() {
+    const text = this.singleMessageText ? this.singleMessageText.value.trim() : "";
+    if (!text) {
+      this.showToast("A mensagem está vazia. Digite ou monte uma mensagem primeiro!", "error");
+      return;
+    }
+
+    const defaultName = `Nova Mensagem Personalizada ${this.templates.length + 1}`;
+    const name = prompt("Digite um nome / título para salvar este novo modelo padrão:", defaultName);
+    if (!name || !name.trim()) return;
+
+    const newId = "template-custom-" + Date.now();
+    const newTemplate = {
+      id: newId,
+      name: name.trim(),
+      text: text
+    };
+
+    this.templates.push(newTemplate);
+    this.activeTemplateId = newId;
+    this.saveTemplates();
+    this.renderActiveTemplateOptions();
+    this.isCustomEdited = false;
+    this.updatePreview();
+    this.showToast(`Mensagem "${name.trim()}" salva nos seus modelos padrão!`, "success");
   }
 
   handleDeleteModalTemplate() {
@@ -669,26 +912,47 @@ class ZapSalonsApp {
       return;
     }
     const selectedId = this.templateListSelect.value;
+    const tIndex = this.templates.findIndex(t => t.id === selectedId);
+    if (tIndex < 0) {
+      // Era uma nova mensagem que ainda não havia sido salva
+      this.closeTemplateModal();
+      return;
+    }
+
+    if (!confirm(`Deseja realmente excluir o modelo "${this.templates[tIndex].name}"?`)) {
+      return;
+    }
+
     this.templates = this.templates.filter(t => t.id !== selectedId);
     this.activeTemplateId = this.templates[0].id;
     this.saveTemplates();
     this.renderActiveTemplateOptions();
     this.renderModalTemplateSelect();
     this.loadTemplateIntoModal(this.activeTemplateId);
+    this.isCustomEdited = false;
+    if (this.singleMessageText) {
+      this.singleMessageText.value = this.buildMessageFromTemplate();
+      this.updateCustomStatusBadge(false);
+    }
     this.updatePreview();
     this.showToast("Modelo excluído com sucesso.", "info");
   }
 
   handleResetDefaultTemplates() {
-    if (confirm("Deseja restaurar as mensagens padrões originais de fábrica?")) {
+    if (confirm("Deseja restaurar as mensagens padrões originais de fábrica? Todas as mensagens padrão voltarão aos textos recomendados.")) {
       this.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
       this.activeTemplateId = this.templates[0].id;
       this.saveTemplates();
       this.renderActiveTemplateOptions();
       this.renderModalTemplateSelect();
       this.loadTemplateIntoModal(this.activeTemplateId);
+      this.isCustomEdited = false;
+      if (this.singleMessageText) {
+        this.singleMessageText.value = this.buildMessageFromTemplate();
+        this.updateCustomStatusBadge(false);
+      }
       this.updatePreview();
-      this.showToast("Modelos originais restaurados!", "success");
+      this.showToast("Modelos originais restaurados com sucesso!", "success");
     }
   }
 

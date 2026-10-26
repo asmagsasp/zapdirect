@@ -537,20 +537,30 @@ textarea:focus {
   color: var(--wa-green);
 }
 
-/* Quick template row */
+/* Quick template row & Actions */
 .template-quick-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   background: rgba(255, 255, 255, 0.02);
   padding: 0.65rem 0.85rem;
   border-radius: 12px;
   border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.template-quick-label-select {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 260px;
 }
 
 .small-title {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
   display: flex;
@@ -559,9 +569,398 @@ textarea:focus {
 }
 
 .template-dropdown {
+  flex: 1;
   padding: 0.45rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 600;
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.template-quick-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.btn-quick-tpl {
+  padding: 0.38rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-tpl-edit {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.btn-tpl-edit:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.btn-tpl-new {
+  background: rgba(37, 211, 102, 0.12);
+  color: var(--wa-green);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+}
+
+.btn-tpl-new:hover {
+  background: var(--wa-green);
+  color: #fff;
+}
+
+.msg-custom-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-save-as-tpl {
+  background: rgba(37, 211, 102, 0.1);
+  color: var(--wa-green);
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-save-as-tpl:hover {
+  background: var(--wa-green);
+  color: #fff;
+}
+
+.label-with-inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.batch-tpl-quick-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-link-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-link-action:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-link-action.highlight {
+  background: rgba(37, 211, 102, 0.1);
+  color: var(--wa-green);
+  border-color: rgba(37, 211, 102, 0.25);
+}
+
+.btn-link-action.highlight:hover {
+  background: var(--wa-green);
+  color: #fff;
+}
+
+.modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+  font-weight: 400;
+}
+
+.btn-modal-create {
+  background: var(--wa-green);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-modal-create:hover {
+  background: #16a34a;
+}
+
+.modal-textarea-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.modal-char-counter {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+/* ========================================================
+   Custom Message Section (Envio Individual)
+   ======================================================== */
+.message-customization-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s ease;
+}
+
+body.theme-light .message-customization-section {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.message-customization-section:focus-within {
+  border-color: rgba(37, 211, 102, 0.4);
+}
+
+.msg-custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.msg-custom-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.badge-custom-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+}
+
+.badge-custom-status.synced {
+  background: rgba(37, 211, 102, 0.12);
+  color: var(--wa-green);
+  border: 1px solid rgba(37, 211, 102, 0.25);
+}
+
+.badge-custom-status.edited {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.btn-reset-msg {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-msg:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: var(--wa-green);
+}
+
+/* Toolbar de Tags */
+.tags-quick-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.5rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+body.theme-light .tags-quick-toolbar {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-hint {
+  font-size: 0.72rem;
+  color: var(--text-subtle);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.toolbar-chips-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.btn-insert-tag {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-insert-tag:hover {
+  border-color: var(--wa-green);
+  color: var(--wa-green);
+  transform: translateY(-1px);
+}
+
+.btn-insert-tag.highlight {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.btn-insert-tag.highlight:hover {
+  border-color: #f59e0b;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* Container do Textarea */
+.textarea-custom-container {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.textarea-custom-container:focus-within {
+  border-color: var(--wa-green);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.textarea-custom-container textarea {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  resize: vertical;
+  min-height: 140px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  padding: 0.85rem 1rem;
+  background: transparent;
+}
+
+.textarea-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--border-color);
+  gap: 0.5rem;
+}
+
+body.theme-light .textarea-bottom-bar {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.quick-emojis-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.emoji-label {
+  font-size: 0.72rem;
+  color: var(--text-subtle);
+  font-weight: 600;
+  margin-right: 0.2rem;
+}
+
+.btn-quick-emoji {
+  background: transparent;
+  border: none;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+  border-radius: 6px;
+  line-height: 1;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-quick-emoji:hover {
+  transform: scale(1.25);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.msg-input-counter {
+  font-size: 0.74rem;
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 /* Big Action Buttons */

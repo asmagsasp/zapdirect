@@ -60,6 +60,24 @@ Você pode usar essas tags em qualquer modelo que criar ou editar no botão **"M
 | `{nota_salao}` | Nota de avaliação no Google | *4.9* |
 | `{qtd_comentarios}` | Quantidade de avaliações | *85 avaliações* |
 | `{saudacao}` | Saudação automática pelo horário | *Bom dia*, *Boa tarde* ou *Boa noite* |
+| `{personalizado}` | Observação ou elogio específico digitado no envio | *vi o trabalho incrível de unhas decoradas no seu Insta* |
+
+---
+
+## ✍️ Personalização da Mensagem no Envio Individual (1 a 1)
+
+Agora você tem **total controle e liberdade** sobre a mensagem antes de enviá-la:
+
+1. **Editor de Texto Direto no Formulário**:
+   - A mensagem gerada pelo modelo selecionado aparece em uma caixa de texto editável diretamente no formulário.
+   - Você pode **reescrever qualquer frase, adicionar detalhes específicos do salão ou apagar trechos**.
+   - O indicador de status mostra se a mensagem está no **Modo Automático** ou se é uma **Mensagem Personalizada**.
+2. **Botão "Restaurar Modelo"**:
+   - Se você fez alterações e quiser voltar ao texto original do modelo preenchido com os dados do salão, basta clicar em **"Restaurar Modelo"**.
+3. **Barra de Tags & Emojis Rápidos**:
+   - Clique em qualquer tag (`{destinatario}`, `{nome_salao}`, `{personalizado}`, etc.) ou emoji (💅, ⭐, ✨, 📅, 💬, 🚀) para inserir na posição exata do cursor.
+4. **Campo "Observação / Elogio Personalizado"**:
+   - Campo opcional para anotar um elogio ou observação única sobre o salão (ex: *"adorei a decoração do seu espaço"*, *"vi suas unhas no Instagram"*), que é automaticamente inserido na tag `{personalizado}`.
 
 ---
 

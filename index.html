@@ -17,7 +17,7 @@
   <!-- SheetJS para ler Excel (.xlsx, .xls) e CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=2.2">
+  <link rel="stylesheet" href="style.css?v=4.0">
 </head>
 <body class="theme-dark">
   <div class="app-layout">
@@ -183,6 +183,19 @@
               </div>
             </div>
 
+            <!-- Observação / Frase Personalizada -->
+            <div class="form-group">
+              <label for="customNote">
+                <i class="fa-solid fa-heart label-icon star-color"></i>
+                <span>Observação / Elogio Personalizado (Opcional)</span>
+              </label>
+              <input 
+                type="text" 
+                id="customNote" 
+                placeholder="Ex: Vi o trabalho incrível de unhas decoradas no seu Instagram..." 
+              >
+            </div>
+
             <!-- Saudação Automática / Manual -->
             <div class="form-group greeting-row">
               <label class="toggle-control">
@@ -192,10 +205,85 @@
               </label>
             </div>
 
-            <!-- Template Selector Quick Switch -->
+            <!-- Template Selector Quick Switch & Gerenciador -->
             <div class="template-quick-row">
-              <span class="small-title"><i class="fa-solid fa-sliders"></i> Modelo Ativo:</span>
-              <select id="activeTemplateSelect" class="template-dropdown"></select>
+              <div class="template-quick-label-select">
+                <span class="small-title"><i class="fa-solid fa-sliders"></i> Modelo Base:</span>
+                <select id="activeTemplateSelect" class="template-dropdown"></select>
+              </div>
+              <div class="template-quick-buttons">
+                <button type="button" id="btnEditCurrentTemplate" class="btn-quick-tpl btn-tpl-edit" title="Alterar o texto e nome do modelo selecionado">
+                  <i class="fa-solid fa-pen-to-square"></i> Alterar Modelo
+                </button>
+                <button type="button" id="btnCreateNewTemplate" class="btn-quick-tpl btn-tpl-new" title="Incluir uma nova mensagem padrão">
+                  <i class="fa-solid fa-plus"></i> Incluir Novo
+                </button>
+              </div>
+            </div>
+
+            <!-- SEÇÃO DE PERSONALIZAÇÃO DA MENSAGEM -->
+            <div class="form-group message-customization-section">
+              <div class="msg-custom-header">
+                <div class="msg-custom-title-row">
+                  <label for="singleMessageText">
+                    <i class="fa-solid fa-pen-to-square label-icon"></i>
+                    <span>Mensagem para Envio (Personalizável)</span>
+                  </label>
+                  <span id="msgCustomBadge" class="badge-custom-status synced" title="Status da mensagem">
+                    <i class="fa-solid fa-arrows-rotate"></i> Modo Automático
+                  </span>
+                </div>
+                <div class="msg-custom-actions-group">
+                  <button type="button" id="btnSaveAsNewTemplate" class="btn-save-as-tpl" title="Salvar este texto como uma nova mensagem padrão permanente">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar como Mensagem Padrão
+                  </button>
+                  <button type="button" id="btnResetMessage" class="btn-reset-msg" title="Restaurar texto do modelo padrão preenchido com os dados">
+                    <i class="fa-solid fa-rotate-left"></i> Restaurar Modelo
+                  </button>
+                </div>
+              </div>
+
+              <!-- Toolbar de Tags Rápidas -->
+              <div class="tags-quick-toolbar">
+                <span class="toolbar-hint"><i class="fa-solid fa-wand-magic-sparkles"></i> Tags:</span>
+                <div class="toolbar-chips-wrap">
+                  <button type="button" class="btn-insert-tag" data-insert="{destinatario}">{destinatario}</button>
+                  <button type="button" class="btn-insert-tag" data-insert="{nome_salao}">{nome_salao}</button>
+                  <button type="button" class="btn-insert-tag" data-insert="{nome_dona}">{nome_dona}</button>
+                  <button type="button" class="btn-insert-tag" data-insert="{nota_salao}">{nota_salao}</button>
+                  <button type="button" class="btn-insert-tag" data-insert="{qtd_comentarios}">{qtd_comentarios}</button>
+                  <button type="button" class="btn-insert-tag" data-insert="{saudacao}">{saudacao}</button>
+                  <button type="button" class="btn-insert-tag highlight" data-insert="{personalizado}">{personalizado}</button>
+                </div>
+              </div>
+
+              <!-- Container Textarea da Mensagem -->
+              <div class="textarea-custom-container">
+                <textarea 
+                  id="singleMessageText" 
+                  rows="8" 
+                  placeholder="Edite ou escreva sua mensagem livremente aqui..."
+                  spellcheck="true"
+                ></textarea>
+                
+                <div class="textarea-bottom-bar">
+                  <div class="quick-emojis-bar">
+                    <span class="emoji-label">Emojis:</span>
+                    <button type="button" class="btn-quick-emoji" data-emoji="👋" title="Aceno">👋</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="💅" title="Unhas">💅</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="⭐" title="Estrela">⭐</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="✨" title="Brilho">✨</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="📅" title="Agenda">📅</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="💬" title="Conversa">💬</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="🚀" title="Foguete">🚀</button>
+                    <button type="button" class="btn-quick-emoji" data-emoji="❤️" title="Coração">❤️</button>
+                  </div>
+                  <span id="msgInputCounter" class="msg-input-counter">0 caracteres</span>
+                </div>
+              </div>
+              <span class="input-subnote">
+                <i class="fa-solid fa-circle-check"></i> Você tem total liberdade: edite o texto acima antes de abrir o WhatsApp ou clique em <strong>Restaurar Modelo</strong> para voltar ao padrão.
+              </span>
             </div>
 
             <!-- Action Buttons -->
@@ -298,8 +386,9 @@
               <button type="button" class="tag-chip" data-tag="{nome_salao}" title="Clique para copiar">{nome_salao}</button>
               <button type="button" class="tag-chip" data-tag="{nome_dona}" title="Clique para copiar">{nome_dona}</button>
               <button type="button" class="tag-chip" data-tag="{nota_salao}" title="Clique para copiar">{nota_salao}</button>
-              <button type="button" class="tag-chip" data-tag="{qtd_comentarios}" title="Clique para copiar">{qtd_comentarios}</button>
-              <button type="button" class="tag-chip" data-tag="{saudacao}" title="Clique para copiar">{saudacao}</button>
+              <button type="button" class="tag-chip" data-tag="{qtd_comentarios}" title="Clique para copiar ou inserir">{qtd_comentarios}</button>
+              <button type="button" class="tag-chip" data-tag="{saudacao}" title="Clique para copiar ou inserir">{saudacao}</button>
+              <button type="button" class="tag-chip highlight" data-tag="{personalizado}" title="Observação personalizada">{personalizado}</button>
             </div>
           </div>
         </section>
@@ -391,10 +480,20 @@
 
               <!-- Active Template for Batch -->
               <div class="form-group">
-                <label for="batchTemplateSelect">
-                  <i class="fa-solid fa-message label-icon"></i>
-                  <span>Modelo de Mensagem a Enviar:</span>
-                </label>
+                <div class="label-with-inline-actions">
+                  <label for="batchTemplateSelect">
+                    <i class="fa-solid fa-message label-icon"></i>
+                    <span>Modelo de Mensagem a Enviar:</span>
+                  </label>
+                  <div class="batch-tpl-quick-btns">
+                    <button type="button" id="btnBatchEditTemplate" class="btn-link-action" title="Alterar o modelo selecionado">
+                      <i class="fa-solid fa-pen-to-square"></i> Alterar Modelo
+                    </button>
+                    <button type="button" id="btnBatchNewTemplate" class="btn-link-action highlight" title="Incluir uma nova mensagem padrão">
+                      <i class="fa-solid fa-plus"></i> Incluir Novo
+                    </button>
+                  </div>
+                </div>
                 <select id="batchTemplateSelect" class="styled-select"></select>
               </div>
             </div>
@@ -556,13 +655,16 @@
 
     </main>
 
-    <!-- Modal: Gerenciador de Mensagem Padrão / Modelos -->
+    <!-- Modal: Gerenciador de Mensagens Padrão (Alterar e Incluir) -->
     <div class="modal-backdrop" id="templateModal">
       <div class="modal-box">
         <div class="modal-header">
           <div class="modal-title">
-            <i class="fa-solid fa-sliders"></i>
-            <h3>Editar Mensagens Padrão</h3>
+            <i class="fa-solid fa-envelope-open-text"></i>
+            <div>
+              <h3>Gerenciador de Mensagens Padrão</h3>
+              <p class="modal-subtitle">Altere qualquer mensagem existente ou inclua novos modelos personalizados.</p>
+            </div>
           </div>
           <button type="button" class="btn-close-modal" id="btnCloseModal">
             <i class="fa-solid fa-xmark"></i>
@@ -575,48 +677,53 @@
               <label for="templateListSelect">Selecione o Modelo para Editar:</label>
               <select id="templateListSelect"></select>
             </div>
-            <button type="button" id="btnNewTemplate" class="btn-secondary">
-              <i class="fa-solid fa-plus"></i> Novo Modelo
+            <button type="button" id="btnNewTemplate" class="btn-primary-sm btn-modal-create">
+              <i class="fa-solid fa-plus"></i> Incluir Nova Mensagem
             </button>
           </div>
 
           <div class="form-group">
-            <label for="modalTemplateName">Nome do Modelo:</label>
-            <input type="text" id="modalTemplateName" placeholder="Ex: Primeiro Contato Salão">
+            <label for="modalTemplateName">Nome / Título do Modelo:</label>
+            <input type="text" id="modalTemplateName" placeholder="Ex: Primeiro Contato Salão - Foco em Agendamento">
           </div>
 
           <div class="form-group">
             <div class="label-with-actions">
-              <label for="modalTemplateText">Corpo da Mensagem:</label>
-              <span class="hint-small">Clique nas tags abaixo para inserir:</span>
+              <label for="modalTemplateText">Texto da Mensagem:</label>
+              <span class="hint-small">Clique nas tags abaixo para inserir automaticamente:</span>
             </div>
             
             <div class="insert-tags-bar">
-              <button type="button" class="insert-tag-btn" data-insert="{destinatario}">+ {destinatario}</button>
-              <button type="button" class="insert-tag-btn" data-insert="{nome_salao}">+ {nome_salao}</button>
-              <button type="button" class="insert-tag-btn" data-insert="{nome_dona}">+ {nome_dona}</button>
-              <button type="button" class="insert-tag-btn" data-insert="{nota_salao}">+ {nota_salao}</button>
-              <button type="button" class="insert-tag-btn" data-insert="{qtd_comentarios}">+ {qtd_comentarios}</button>
-              <button type="button" class="insert-tag-btn" data-insert="{saudacao}">+ {saudacao}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{destinatario}" title="Dona ou nome do salão automático">+ {destinatario}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nome_salao}" title="Nome do Salão">+ {nome_salao}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nome_dona}" title="Nome da Dona/Profissional">+ {nome_dona}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{nota_salao}" title="Nota de avaliação Google">+ {nota_salao}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{qtd_comentarios}" title="Quantidade de comentários">+ {qtd_comentarios}</button>
+              <button type="button" class="insert-tag-btn" data-insert="{saudacao}" title="Bom dia / Boa tarde / Boa noite">+ {saudacao}</button>
+              <button type="button" class="insert-tag-btn highlight" data-insert="{personalizado}" title="Elogio ou observação personalizada">+ {personalizado}</button>
             </div>
 
-            <textarea id="modalTemplateText" rows="9" placeholder="Digite a mensagem padrão usando as tags acima..."></textarea>
-            <div class="formatting-hints">
-              Dicas WhatsApp: <code>*negrito*</code>, <code>_itálico_</code>, <code>~tachado~</code>.
+            <textarea id="modalTemplateText" rows="10" placeholder="Digite o texto padrão usando as tags acima..."></textarea>
+            
+            <div class="modal-textarea-footer">
+              <div class="formatting-hints">
+                Dicas WhatsApp: <code>*negrito*</code>, <code>_itálico_</code>, <code>~tachado~</code>.
+              </div>
+              <span id="modalCharCounter" class="modal-char-counter">0 caracteres</span>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" id="btnResetDefaultTemplates" class="btn-ghost text-muted">
-            <i class="fa-solid fa-rotate-left"></i> Restaurar Modelos Originais
+          <button type="button" id="btnResetDefaultTemplates" class="btn-ghost text-muted" title="Restaura os modelos padrão originais recomendados">
+            <i class="fa-solid fa-rotate-left"></i> Restaurar Padrões de Fábrica
           </button>
           <div class="modal-footer-right">
             <button type="button" id="btnDeleteTemplate" class="btn-ghost text-danger">
-              <i class="fa-solid fa-trash"></i> Excluir
+              <i class="fa-solid fa-trash"></i> Excluir Modelo
             </button>
             <button type="button" id="btnSaveTemplate" class="btn-primary">
-              <i class="fa-solid fa-check"></i> Salvar Alterações
+              <i class="fa-solid fa-floppy-disk"></i> Salvar Mensagem Padrão
             </button>
           </div>
         </div>
@@ -652,6 +759,6 @@
 
   </div>
 
-  <script src="app.js?v=3.3"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>

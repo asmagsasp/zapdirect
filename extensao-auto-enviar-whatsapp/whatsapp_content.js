@@ -384,12 +384,13 @@ function startAntiBanTransition(currentIndex, queue, config) {
     return;
   }
 
-  const baseInterval = config.interval || 10;
+  const baseInterval = config.interval || 300;
   let delaySecs = baseInterval;
 
-  if (config.jitter && baseInterval >= 30) {
-    const jitter = Math.floor(Math.random() * 21) - 10;
-    delaySecs = Math.max(15, baseInterval + jitter);
+  if (config.jitter && baseInterval >= 60) {
+    const maxJitter = Math.min(60, Math.floor(baseInterval * 0.15));
+    const jitter = Math.floor(Math.random() * (maxJitter * 2 + 1)) - maxJitter;
+    delaySecs = Math.max(30, baseInterval + jitter);
   }
 
   const targetTimestamp = Date.now() + (delaySecs * 1000);

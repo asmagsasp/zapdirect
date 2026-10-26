@@ -3,7 +3,7 @@
  * Sem necessidade de cadastro de contatos na agenda.
  */
 
-// Modelos Iniciais Padrão para Salões de Beleza
+// Modelos Iniciais Padrão para Salões de Beleza (17 variações anti-ban)
 const DEFAULT_TEMPLATES = [
   {
     id: "template-dor-agendamento",
@@ -32,13 +32,63 @@ const DEFAULT_TEMPLATES = [
   },
   {
     id: "template-personalizado",
-    name: "✨ Elogio & Abordagem Personalizada (Novo)",
+    name: "✨ Elogio & Abordagem Personalizada",
     text: "Olá, {destinatario}! {saudacao}!\n\nVi o perfil do *{nome_salao}* no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*){personalizado}.\n\nTrabalho desenvolvendo sistemas de agendamento automático e lembretes para salões de destaque. Você teria 1 minuto para dar uma olhadinha em uma demonstração sem compromisso?"
   },
   {
     id: "template-padrao-3",
     name: "Primeiro Toque (Super Rápido)",
     text: "{saudacao}! É a responsável do *{nome_salao}*?\n\nVi que vocês são muito bem avaliados no Google (nota *{nota_salao}* com *{qtd_comentarios} avaliações*) e gostaria de trocar uma ideia rápida com você quando tiver um tempinho!"
+  },
+  {
+    id: "template-anti-ban-elogio",
+    name: "🛡️ Anti-Ban 1: Elogio Genuíno & Pergunta Simples",
+    text: "{saudacao}, {destinatario}! Tudo bem?\n\nEstava olhando os salões aqui da região e vi a nota incrível do *{nome_salao}* no Google (*{nota_salao} estrelas*).\n\nParabéns pelo trabalho de vocês! Você que é a dona ou responsável pelo atendimento?"
+  },
+  {
+    id: "template-anti-ban-duvida-agenda",
+    name: "🛡️ Anti-Ban 2: Dúvida Rápida sobre Horários",
+    text: "Oi, {destinatario}, {saudacao}!\n\nEncontrei o perfil do *{nome_salao}* pelo Google e achei os comentários super positivos.\n\nUma dúvida rápida: vocês recebem muito agendamento direto pelo WhatsApp ou usam algum link de agendamento online hoje?"
+  },
+  {
+    id: "template-anti-ban-faltas-lembretes",
+    name: "🛡️ Anti-Ban 3: Foco em Faltas & Esquecimentos",
+    text: "Olá, {destinatario}, como vai?\n\nAcompanho o trabalho do *{nome_salao}* e sei como a rotina de salão é cheia.\n\nVocê costuma sofrer com clientes que esquecem o horário ou desmarcam de última hora? Queria te mostrar como alguns salões parceiros resolveram isso de forma 100% automática."
+  },
+  {
+    id: "template-anti-ban-dia-a-dia",
+    name: "🛡️ Anti-Ban 4: Economia de Tempo no Atendimento",
+    text: "Oi, {destinatario}! {saudacao}!\n\nPassando para parabenizar pelo sucesso do *{nome_salao}* (nota *{nota_salao}* com *{qtd_comentarios} avaliações*).\n\nSei que responder mensagem de cliente o dia todo tira o foco do atendimento. Você estaria aberta a conhecer uma solução rápida que responde e agenda para você 24 horas por dia?"
+  },
+  {
+    id: "template-anti-ban-troca-ideia",
+    name: "🛡️ Anti-Ban 5: Conversa Desarmada e Direta",
+    text: "{saudacao}, {destinatario}!\n\nTudo bem contigo? Vi o *{nome_salao}* no Google e fiquei bem impressionado com a reputação de vocês.\n\nTenho uma pergunta rápida sobre o fluxo de novas clientes no salão. Posso te mandar por aqui quando você tiver 1 minutinho?"
+  },
+  {
+    id: "template-anti-ban-google-destaque",
+    name: "🛡️ Anti-Ban 6: Destaque Local na Região",
+    text: "Olá, {destinatario}, {saudacao}!\n\nEstava pesquisando os melhores espaços de beleza da nossa região e o *{nome_salao}* apareceu em grande destaque no Google com *{nota_salao} estrelas*!\n\nCriei uma ferramenta exclusiva que ajuda salões bem avaliados a lotarem a agenda sem depender de atendimento manual. Faria sentido te enviar um exemplo prático?"
+  },
+  {
+    id: "template-anti-ban-primeiro-contato",
+    name: "🛡️ Anti-Ban 7: Pergunta Fechada (Alta Taxa de Resposta)",
+    text: "Oi {destinatario}, tudo bem? É você quem cuida da agenda do *{nome_salao}*?\n\nQueria tirar uma dúvida bem rapidinha sobre o salão."
+  },
+  {
+    id: "template-anti-ban-modernizacao",
+    name: "🛡️ Anti-Ban 8: Modernização & Praticidade",
+    text: "{saudacao}, {destinatario}! Tudo bem?\n\nVi as ótimas avaliações do *{nome_salao}* no Google ({qtd_comentarios} clientes elogiando).\n\nVocês já pensaram em ter uma página própria de agendamento automático para as clientes marcarem direto pelo Instagram e WhatsApp? Se quiser, te mostro como funciona sem compromisso."
+  },
+  {
+    id: "template-anti-ban-parceria-leve",
+    name: "🛡️ Anti-Ban 9: Parceria & Apoio Local",
+    text: "Olá {destinatario}, como vai? {saudacao}!\n\nTrabalho com tecnologia focada exclusivamente em salões de beleza e notei o destaque do *{nome_salao}* na nossa região.\n\nPosso te mandar uma ideia rápida de como economizar tempo na marcação de horários esta semana?"
+  },
+  {
+    id: "template-anti-ban-curto-objetivo",
+    name: "🛡️ Anti-Ban 10: Super Curto & Casual",
+    text: "Oi {destinatario}, {saudacao}! Vi o *{nome_salao}* no Google e achei incrível a nota de vocês (*{nota_salao}*).\n\nVocês atendem somente com horário marcado ou por ordem de chegada também?"
   }
 ];
 
@@ -200,7 +250,7 @@ class ZapSalonsApp {
         // Adiciona modelos padrão novos caso não existam no localStorage atual
         DEFAULT_TEMPLATES.forEach(defT => {
           if (!this.templates.some(t => t.id === defT.id)) {
-            this.templates.unshift(defT);
+            this.templates.push(defT);
           }
         });
       } catch (e) {
@@ -759,6 +809,13 @@ class ZapSalonsApp {
     this.activeTemplateSelect.innerHTML = "";
     if (this.batchTemplateSelect) {
       this.batchTemplateSelect.innerHTML = "";
+
+      // Opção de Rotação Automática Anti-Ban recomendada
+      const optRotate = document.createElement("option");
+      optRotate.value = "rotate_all";
+      optRotate.textContent = `🔄 Rotação Automática Anti-Ban (Alterna entre os ${this.templates.length} modelos a cada contato) ⭐`;
+      optRotate.selected = true;
+      this.batchTemplateSelect.appendChild(optRotate);
     }
 
     this.templates.forEach(t => {
@@ -772,6 +829,7 @@ class ZapSalonsApp {
 
       if (this.batchTemplateSelect) {
         const optBatch = opt.cloneNode(true);
+        optBatch.selected = false;
         this.batchTemplateSelect.appendChild(optBatch);
       }
     });
@@ -1666,14 +1724,15 @@ class ZapSalonsApp {
 
 
   calculateNextInterval() {
-    const baseSeconds = parseInt(this.batchIntervalSelect.value, 10) || 120;
-    // Se for modo de teste (10s ou 30s), executa exatamente no tempo de teste sem atraso
+    const baseSeconds = parseInt(this.batchIntervalSelect.value, 10) || 300;
+    // Se for modo de teste (30s), executa exatamente no tempo de teste sem atraso
     if (baseSeconds <= 30) {
       return baseSeconds;
     }
     if (this.randomJitterCheck && this.randomJitterCheck.checked) {
-      const jitter = Math.floor(Math.random() * 21) - 10;
-      return Math.max(30, baseSeconds + jitter);
+      const maxJitter = Math.min(60, Math.floor(baseSeconds * 0.15));
+      const jitter = Math.floor(Math.random() * (maxJitter * 2 + 1)) - maxJitter;
+      return Math.max(60, baseSeconds + jitter);
     }
     return baseSeconds;
   }
@@ -1687,7 +1746,7 @@ class ZapSalonsApp {
     // Filtra todos os contatos que ainda estão pendentes (ignora os que já constam como Enviado = Sim)
     const pendingContacts = this.batchContacts
       .filter(c => c.status === "pending")
-      .map(c => ({
+      .map((c, idx) => ({
         id: c.id,
         salonName: c.salonName,
         ownerName: c.ownerName,
@@ -1695,7 +1754,8 @@ class ZapSalonsApp {
         rawPhone: c.rawPhone,
         rating: c.rating,
         reviews: c.reviews,
-        message: this.buildBatchMessage(c)
+        message: this.buildBatchMessage(c, idx),
+        templateName: this.getBatchActiveTemplate(idx)?.name || "Modelo Rotativo"
       }));
 
     if (pendingContacts.length === 0) {
@@ -1708,7 +1768,7 @@ class ZapSalonsApp {
       return;
     }
 
-    const intervalSecs = parseInt(this.batchIntervalSelect.value, 10) || 10;
+    const intervalSecs = parseInt(this.batchIntervalSelect.value, 10) || 300;
     const hasJitter = this.randomJitterCheck ? this.randomJitterCheck.checked : false;
 
     this.batchStatus = "running";
@@ -1914,7 +1974,7 @@ class ZapSalonsApp {
       return;
     }
 
-    const message = this.buildBatchMessage(contact);
+    const message = this.buildBatchMessage(contact, contactIndex);
     const url = `https://web.whatsapp.com/send?phone=${contact.cleanPhone}&text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
 
@@ -1928,7 +1988,7 @@ class ZapSalonsApp {
       ownerName: contact.ownerName,
       rating: contact.rating,
       reviews: contact.reviews,
-      templateName: this.getBatchActiveTemplate()?.name || "Disparo Avulso",
+      templateName: this.getBatchActiveTemplate(contactIndex)?.name || "Disparo Avulso",
       timestamp: new Date().toISOString()
     });
 
@@ -1937,13 +1997,17 @@ class ZapSalonsApp {
     this.showToast(`Conversa com "${contact.salonName}" aberta!`, "success");
   }
 
-  getBatchActiveTemplate() {
-    const templateId = this.batchTemplateSelect ? this.batchTemplateSelect.value : this.activeTemplateId;
-    return this.templates.find(t => t.id === templateId) || this.templates[0];
+  getBatchActiveTemplate(index = 0) {
+    const chosenVal = this.batchTemplateSelect ? this.batchTemplateSelect.value : "rotate_all";
+    if (chosenVal === "rotate_all") {
+      if (!this.templates || this.templates.length === 0) return DEFAULT_TEMPLATES[0];
+      return this.templates[Math.abs(index) % this.templates.length];
+    }
+    return this.templates.find(t => t.id === chosenVal) || this.templates[0];
   }
 
-  buildBatchMessage(contact) {
-    const template = this.getBatchActiveTemplate();
+  buildBatchMessage(contact, index = 0) {
+    const template = this.getBatchActiveTemplate(index);
     if (!template) return "";
 
     let text = template.text;

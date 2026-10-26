@@ -17,7 +17,7 @@
   <!-- SheetJS para ler Excel (.xlsx, .xls) e CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="style.css?v=4.2">
 </head>
 <body class="theme-dark">
   <div class="app-layout">
@@ -445,7 +445,7 @@
           <section class="card anti-ban-card">
             <div class="card-header">
               <div class="badge-tag badge-shield">
-                <i class="fa-solid fa-shield-halved"></i> Proteção Anti-Ban WhatsApp
+                <i class="fa-solid fa-shield-halved"></i> Proteção Anti-Ban WhatsApp Avançada
               </div>
               <span class="safe-tag"><i class="fa-solid fa-circle-check"></i> Seguro</span>
             </div>
@@ -457,15 +457,17 @@
                   <span>Intervalo Entre Envios:</span>
                 </label>
                 <select id="batchIntervalSelect" class="styled-select">
-                  <option value="10">⚡ 10 Segundos • Modo Teste Rápido</option>
-                  <option value="30">🚀 30 Segundos • Teste Rápido</option>
-                  <option value="60">1 Minuto (60s) • Rápido moderado</option>
-                  <option value="90">1 Minuto e meio (90s) • Seguro</option>
-                  <option value="120" selected>2 Minutos (120s) • Altamente Recomendado (Anti-Ban) ⭐</option>
-                  <option value="180">3 Minutos (180s) • Ultra Seguro (Grandes Listas)</option>
+                  <option value="300" selected>🛡️ 5 Minutos (300s) • Altamente Recomendado Anti-Ban ⭐</option>
+                  <option value="360">🛡️ 6 Minutos (360s) • Ultra Seguro</option>
+                  <option value="480">🛡️ 8 Minutos (480s) • Pacing Humano Lento</option>
+                  <option value="600">🛡️ 10 Minutos (600s) • Máxima Proteção</option>
+                  <option value="240">4 Minutos (240s) • Muito Seguro</option>
+                  <option value="180">3 Minutos (180s) • Seguro</option>
+                  <option value="120">2 Minutos (120s) • Moderado</option>
+                  <option value="30">⚡ 30 Segundos • Apenas Modo Teste Rápido</option>
                 </select>
                 <span class="input-subnote">
-                  <i class="fa-solid fa-info-circle"></i> O intervalo de 1 a 2 minutos evita que o WhatsApp detecte automação robótica.
+                  <i class="fa-solid fa-info-circle"></i> O intervalo de 5 minutos simula o ritmo de uma pessoa real digitando e evita bloqueios da Meta.
                 </span>
               </div>
 
@@ -474,7 +476,7 @@
                 <label class="toggle-control">
                   <input type="checkbox" id="randomJitterCheck" checked>
                   <span class="toggle-slider"></span>
-                  <span class="toggle-label">Variação humana aleatória (±15s para simular digitação real)</span>
+                  <span class="toggle-label">Variação humana aleatória (±30s a ±60s para que nenhum disparo tenha o mesmo tempo)</span>
                 </label>
               </div>
 
@@ -495,6 +497,19 @@
                   </div>
                 </div>
                 <select id="batchTemplateSelect" class="styled-select"></select>
+              </div>
+
+              <!-- Anti-Ban Vital Tips Box -->
+              <div class="anti-ban-warning-box" style="margin-top: 15px; background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 14px 16px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.55;">
+                <div style="font-weight: 700; color: #eab308; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.9rem;">
+                  <i class="fa-solid fa-shield-virus"></i> Regras de Ouro Anti-Ban (Especialmente Pós-Restrição de 21h):
+                </div>
+                <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px;">
+                  <li><strong>Rotação Ativa:</strong> Mantenha a opção <em>"Rotação Automática"</em> selecionada. O sistema envia uma mensagem com estrutura e palavras diferentes para cada salão.</li>
+                  <li><strong>Intervalo de 5 Minutos:</strong> Disparos rápidos ativam os filtros heurísticos do WhatsApp. 5 minutos simulam pausa humana natural.</li>
+                  <li><strong>Reaquecimento de Chip (Warm-up):</strong> Nos primeiros 3 a 5 dias após uma restrição, envie no máximo <strong>15 a 25 mensagens por dia</strong> em lotes pequenos.</li>
+                  <li><strong>Estimule a Resposta:</strong> Nossos novos modelos terminam com perguntas simples. Assim que a dona do salão responde, o WhatsApp classifica a conversa como confiável e você fica 100% seguro!</li>
+                </ul>
               </div>
             </div>
           </section>
@@ -519,7 +534,7 @@
               </div>
               <div class="timer-texts">
                 <span class="timer-state-label" id="timerStatusLabel">Fila pronta para iniciar</span>
-                <span class="timer-clock" id="timerClockDisplay">02:00</span>
+                <span class="timer-clock" id="timerClockDisplay">05:00</span>
               </div>
             </div>
 
@@ -834,6 +849,6 @@
 
   </div>
 
-  <script src="app.js?v=4.1"></script>
+  <script src="app.js?v=4.2"></script>
 </body>
 </html>

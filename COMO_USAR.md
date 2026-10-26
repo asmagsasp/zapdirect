@@ -1,4 +1,4 @@
-# 🚀 ZapDirect Salões - Guia de Uso Rápido
+# 🚀 ZapDirect - Guia de Uso Rápido
 
 Sistema inteligente para prospecção e envio de mensagens para salões de beleza no **WhatsApp Web sem precisar cadastrar o número na agenda do celular**.
 

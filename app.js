@@ -1,5 +1,5 @@
 /**
- * ZapDirect Salões - Sistema de Envio Rápido no WhatsApp Web
+ * ZapDirect - Sistema de Envio Rápido no WhatsApp Web
  * Sem necessidade de cadastro de contatos na agenda.
  */
 
@@ -749,7 +749,7 @@ class ZapSalonsApp {
     this.isCustomEdited = false;
     this.phoneInput.focus();
     this.updatePreview();
-    this.showToast("Formulário limpo para o próximo salão!", "info");
+    this.showToast("Formulário limpo para o próximo contato!", "info");
   }
 
   // --- Templates Management ---
@@ -979,13 +979,13 @@ class ZapSalonsApp {
 
   renderHistory() {
     this.historyCountBadge.textContent = this.history.length;
-    this.historyTotalLabel.textContent = `${this.history.length} salões contatados`;
+    this.historyTotalLabel.textContent = `${this.history.length} contatos realizados`;
 
     if (this.history.length === 0) {
       this.historyListContainer.innerHTML = `
         <div class="empty-history">
           <i class="fa-regular fa-paper-plane"></i>
-          <p>Nenhum envio registrado ainda.<br>Quando você abrir uma conversa, o salão aparecerá aqui.</p>
+          <p>Nenhum envio registrado ainda.<br>Quando você abrir uma conversa, o contato aparecerá aqui.</p>
         </div>
       `;
       return;

@@ -1219,22 +1219,28 @@ class ZapSalonsApp {
         const sentData = event.data.payload;
         const contact = this.batchContacts.find(c => c.id === sentData.id || c.cleanPhone === sentData.cleanPhone);
         if (contact) {
-          contact.status = "sent";
-          contact.sentAt = sentData.timestamp || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+          if (sentData.status === "skipped_invalid" || sentData.status === "skipped_timeout") {
+            contact.status = "error";
+            contact.sentAt = sentData.status === "skipped_invalid" ? "Sem WhatsApp / Inválido" : "Tempo esgotado (16s)";
+            this.showToast(`⚠️ Contato ${contact.ownerName || contact.salonName} (${contact.cleanPhone}) pulado automaticamente (${contact.sentAt}).`, "warning");
+          } else {
+            contact.status = "sent";
+            contact.sentAt = sentData.timestamp || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-          this.addToHistory({
-            phone: contact.cleanPhone,
-            displayPhone: contact.rawPhone,
-            salonName: contact.salonName,
-            ownerName: contact.ownerName,
-            rating: contact.rating,
-            reviews: contact.reviews,
-            templateName: this.getBatchActiveTemplate()?.name || "Modelo em Lote",
-            timestamp: new Date().toISOString()
-          });
+            this.addToHistory({
+              phone: contact.cleanPhone,
+              displayPhone: contact.rawPhone,
+              salonName: contact.salonName,
+              ownerName: contact.ownerName,
+              rating: contact.rating,
+              reviews: contact.reviews,
+              templateName: this.getBatchActiveTemplate()?.name || "Modelo em Lote",
+              timestamp: new Date().toISOString()
+            });
 
-          this.playBeepSound();
-          this.showToast(`✅ Enviado para ${contact.ownerName || contact.salonName}!`, "success");
+            this.playBeepSound();
+            this.showToast(`✅ Enviado para ${contact.ownerName || contact.salonName}!`, "success");
+          }
         }
 
         // Procura próximo pending para marcar como sending na UI

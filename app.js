@@ -60,6 +60,7 @@ class ZapSalonsApp {
     this.batchBaseInterval = 120;
     this.activeFilter = "all";
     this.audioCtx = null;
+    this.hasExtension = false;
 
     this.initElements();
     this.loadState();
@@ -1204,9 +1205,13 @@ class ZapSalonsApp {
       if (!event.data) return;
 
       if (event.data.type === "ZAP_EXTENSION_READY") {
-        console.log("[ZapDirect App] Extensão detectada e conectada!");
+        const isFirstConnection = !this.hasExtension;
         this.hasExtension = true;
         this.updateExtensionBadge(true);
+        if (isFirstConnection) {
+          console.log("[ZapDirect App] Extensão detectada e conectada! Versão:", event.data.version || "3.3");
+          this.showToast("🚀 Extensão ZapDirect conectada com sucesso!", "success");
+        }
       }
 
       if (event.data.type === "ZAP_CONTACT_SENT_UPDATE") {
@@ -1261,14 +1266,79 @@ class ZapSalonsApp {
       }
     });
 
-    // Pings periódicos para auto-detectar a extensão
+    // Pings ativos para auto-detectar a extensão
     const pingExtension = () => {
-      if (!this.hasExtension) {
-        window.postMessage({ type: "ZAP_PING_EXTENSION" }, "*");
-      }
+      window.postMessage({ type: "ZAP_PING_EXTENSION", timestamp: Date.now() }, "*");
     };
     pingExtension();
-    setInterval(pingExtension, 1500);
+    setInterval(pingExtension, 2000);
+
+    // Timeout de detecção inicial: se em 2.5s a extensão não responder, atualiza status para avisar o usuário
+    setTimeout(() => {
+      if (!this.hasExtension) {
+        this.updateExtensionBadge(false);
+      }
+    }, 2500);
+
+    // Eventos do Modal de Ajuda da Extensão
+    const extPill = document.getElementById("extStatusPill");
+    const btnHelpExtManual = document.getElementById("btnHelpExtManual");
+    const extHelpModal = document.getElementById("extHelpModal");
+    const btnCloseExtModal = document.getElementById("btnCloseExtModal");
+    const btnDoneExtModal = document.getElementById("btnDoneExtModal");
+    const btnTestExtPing = document.getElementById("btnTestExtPing");
+    const btnCopyExtFolderPath = document.getElementById("btnCopyExtFolderPath");
+
+    const openExtHelp = () => {
+      if (extHelpModal) {
+        this.updateExtModalStatus();
+        extHelpModal.classList.add("open");
+      }
+    };
+
+    const closeExtHelp = () => {
+      if (extHelpModal) {
+        extHelpModal.classList.remove("open");
+      }
+    };
+
+    if (extPill) extPill.addEventListener("click", openExtHelp);
+    if (btnHelpExtManual) btnHelpExtManual.addEventListener("click", openExtHelp);
+    if (btnCloseExtModal) btnCloseExtModal.addEventListener("click", closeExtHelp);
+    if (btnDoneExtModal) btnDoneExtModal.addEventListener("click", closeExtHelp);
+    if (extHelpModal) {
+      extHelpModal.addEventListener("click", (e) => {
+        if (e.target === extHelpModal) closeExtHelp();
+      });
+    }
+
+    if (btnTestExtPing) {
+      btnTestExtPing.addEventListener("click", () => {
+        window.postMessage({ type: "ZAP_PING_EXTENSION" }, "*");
+        btnTestExtPing.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testando...';
+        setTimeout(() => {
+          this.updateExtModalStatus();
+          if (this.hasExtension) {
+            btnTestExtPing.innerHTML = '<i class="fa-solid fa-check text-success"></i> Conectado!';
+            this.showToast("Extensão conectada com sucesso!", "success");
+          } else {
+            btnTestExtPing.innerHTML = '<i class="fa-solid fa-rotate"></i> Testar Novamente';
+            this.showToast("Ainda não conectada. Certifique-se de clicar em Recarregar (🔄) em chrome://extensions", "error");
+          }
+        }, 800);
+      });
+    }
+
+    if (btnCopyExtFolderPath) {
+      btnCopyExtFolderPath.addEventListener("click", () => {
+        const input = document.getElementById("extFolderPathInput");
+        if (input) {
+          navigator.clipboard.writeText(input.value).then(() => {
+            this.showToast("Caminho da pasta copiado!", "success");
+          });
+        }
+      });
+    }
 
     // Mapping selects change
     const mapSelects = [
@@ -1724,10 +1794,38 @@ class ZapSalonsApp {
       pill.classList.remove("offline");
       pill.classList.add("online");
       label.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i> Auto-Disparo Ativo (Extensão Conectada)';
+      pill.title = "Extensão ZapDirect conectada! Clique para ver detalhes.";
     } else {
       pill.classList.remove("online");
       pill.classList.add("offline");
-      label.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-warning"></i> Extensão não detectada';
+      label.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-warning"></i> Extensão não detectada • <span style="text-decoration: underline;">Clique para Ativar</span>';
+      pill.title = "Clique para abrir instruções rápidas de ativação da extensão.";
+    }
+
+    this.updateExtModalStatus();
+  }
+
+  updateExtModalStatus() {
+    const banner = document.getElementById("extModalStatusBanner");
+    const icon = document.getElementById("extModalStatusIcon");
+    const title = document.getElementById("extModalStatusTitle");
+    const desc = document.getElementById("extModalStatusDesc");
+    if (!banner || !icon || !title || !desc) return;
+
+    if (this.hasExtension) {
+      banner.style.background = "rgba(37, 211, 102, 0.12)";
+      banner.style.borderColor = "rgba(37, 211, 102, 0.4)";
+      icon.className = "fa-solid fa-circle-check";
+      icon.style.color = "#25d366";
+      title.textContent = "Extensão Conectada e Ativa!";
+      desc.textContent = "O envio em lote 100% automático no WhatsApp Web está pronto para rodar.";
+    } else {
+      banner.style.background = "rgba(234, 179, 8, 0.12)";
+      banner.style.borderColor = "rgba(234, 179, 8, 0.4)";
+      icon.className = "fa-solid fa-triangle-exclamation";
+      icon.style.color = "#eab308";
+      title.textContent = "Extensão Desconectada ou Pendente de Recarga";
+      desc.textContent = "Abra chrome://extensions e clique em Recarregar (🔄) no cartão ZapDirect.";
     }
   }
 

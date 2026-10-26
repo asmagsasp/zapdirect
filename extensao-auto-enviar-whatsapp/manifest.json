@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ZapDirect - Disparador Automático WhatsApp",
-  "version": "3.2",
+  "version": "3.3",
   "description": "Envio automático por planilha no WhatsApp Web com proteção anti-ban e sem bloqueio de pop-ups.",
   "permissions": [
     "storage"
@@ -18,12 +18,15 @@
     },
     {
       "matches": [
-        "http://localhost:3000/*"
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*.vercel.app/*",
+        "file:///*"
       ],
       "js": [
         "bridge_content.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }

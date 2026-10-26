@@ -1,18 +1,35 @@
 /**
- * ZapDirect Bridge Content Script v3.2
- * Roda dentro de http://localhost:3000/*
+ * ZapDirect Bridge Content Script v3.3
  * Estabelece a ponte bidirecional entre o painel Web e o chrome.storage da extensão.
+ * Suporta http://localhost/*, http://127.0.0.1/*, https://*.vercel.app/* e file:///*
  */
 
-console.log("[ZapDirect Bridge v3.2] Extensão conectada ao painel web.");
+console.log("[ZapDirect Bridge v3.3] Extensão conectada ao painel web.");
 
-// Notifica a página web imediatamente que a extensão está ativa
+// Notifica a página web que a extensão está pronta e ativa
 function notifyReady() {
-  window.postMessage({ type: "ZAP_EXTENSION_READY", version: "3.2" }, "*");
+  try {
+    window.postMessage({ 
+      type: "ZAP_EXTENSION_READY", 
+      version: "3.3",
+      timestamp: Date.now()
+    }, "*");
+  } catch (e) {
+    console.error("[ZapDirect Bridge] Erro ao enviar postMessage:", e);
+  }
 }
+
+// 1. Notifica imediatamente
 notifyReady();
 
-// Escuta comandos vindos do app.js
+// 2. Notifica após o DOM estar pronto
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", notifyReady);
+}
+setTimeout(notifyReady, 400);
+setTimeout(notifyReady, 1200);
+
+// 3. Escuta comandos vindos do app.js
 window.addEventListener("message", (event) => {
   if (event.source !== window || !event.data) return;
 
@@ -21,11 +38,12 @@ window.addEventListener("message", (event) => {
   // Responder a pings da página
   if (type === "ZAP_PING_EXTENSION") {
     notifyReady();
+    return;
   }
 
   // Iniciar Fila
   if (type === "ZAP_START_BATCH") {
-    console.log("[ZapDirect Bridge] Recebida solicitação de início da fila:", payload.contacts.length, "contatos.");
+    console.log("[ZapDirect Bridge] Recebida solicitação de início da fila:", payload.contacts ? payload.contacts.length : 0, "contatos.");
 
     chrome.storage.local.set({
       zapBatchQueue: payload.contacts,

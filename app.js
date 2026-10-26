@@ -701,8 +701,9 @@ class ZapSalonsApp {
     // Build WhatsApp URL
     let url = "";
     if (targetType === "web") {
-      // Direct Web WhatsApp link
-      url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+      // Direct Web WhatsApp link com disparo automático pela extensão
+      const autoParam = `&zap_auto=1&zap_ts=${Date.now()}`;
+      url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}${autoParam}`;
     } else {
       // Standard API / wa.me link (compatible with WhatsApp Desktop App)
       url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;

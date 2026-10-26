@@ -79,6 +79,7 @@ function updateStatusBanner(htmlContent, isDone = false) {
 }
 
 function findSendButton() {
+  // 1. data-icon send oficial
   const sendIcon = document.querySelector('span[data-icon="send"]') ||
                    document.querySelector('span[data-icon="wds-ic-send"]') ||
                    document.querySelector('span[data-icon="send-light"]') ||
@@ -90,9 +91,20 @@ function findSendButton() {
     if (btn) return btn;
   }
 
+  // 2. aria-label Enviar / Send
   const ariaBtn = document.querySelector('button[aria-label="Enviar"]') ||
-                  document.querySelector('button[aria-label="Send"]');
+                  document.querySelector('button[aria-label="Send"]') ||
+                  document.querySelector('[aria-label="Enviar"]') ||
+                  document.querySelector('[aria-label="Send"]');
   if (ariaBtn) return ariaBtn;
+
+  // 3. Botão no footer que contenha o ícone do aviãozinho
+  const footerBtns = document.querySelectorAll('footer button, div[role="textbox"] ~ button, div[contenteditable="true"] ~ button');
+  for (const b of footerBtns) {
+    if (b.querySelector('[data-icon="send"]') || b.querySelector('svg path[d*="M1.101"]')) {
+      return b;
+    }
+  }
 
   return null;
 }
@@ -171,9 +183,8 @@ function checkAndProcessQueue() {
     const status = data.zapBatchStatus || "idle";
     const currentIndex = (typeof data.zapCurrentIndex === "number") ? data.zapCurrentIndex : 0;
 
-    // Se a fila não está rodando, verifica se é um envio avulso direto
+    // Se a fila não está rodando, não faz nada no executor em lote
     if (status !== "running") {
-      checkSingleUrlSend();
       return;
     }
 
@@ -308,26 +319,77 @@ function advanceQueueToNext(currentIndex, queue, config) {
   }, 1000);
 }
 
-// Suporte para envio avulso via link direto (Modo Individual)
+// Suporte para envio avulso via link direto (Modo Individual 1 a 1)
+let isSingleSending = false;
+let singleSentUrls = new Set();
+
 function checkSingleUrlSend() {
   const url = window.location.href;
-  if (!url.includes("text=") && !url.includes("send?phone=")) return;
+  
+  // Se não tem telefone ou texto na URL, não é envio do ZapDirect
+  if (!url.includes("phone=") && !url.includes("send?phone=")) return;
 
-  const inputEl = findChatInput();
+  // Se já foi enviado para esta URL nesta sessão
+  if (singleSentUrls.has(url) || sessionStorage.getItem("zap_single_sent") === url) {
+    return;
+  }
+
+  if (isSingleSending) return;
+
+  // Detecta se número é inválido
+  if (checkForInvalidNumberModal()) {
+    isSingleSending = true;
+    singleSentUrls.add(url);
+    sessionStorage.setItem("zap_single_sent", url);
+    updateStatusBanner("⚠️ ZapDirect: O número informado não possui WhatsApp.", true);
+    return;
+  }
+
   const sendBtn = findSendButton();
+  const inputEl = findChatInput();
   const hasText = inputEl && (inputEl.innerText || inputEl.textContent || "").trim().length > 0;
 
-  if (hasText || sendBtn) {
-    if (sessionStorage.getItem("zap_single_sent") !== url) {
-      sessionStorage.setItem("zap_single_sent", url);
-      updateStatusBanner("⚡ ZapDirect: Enviando mensagem automaticamente...");
+  // Quando o botão de enviar aparecer ou o texto estiver preenchido no chat
+  if (sendBtn || hasText) {
+    isSingleSending = true;
+    singleSentUrls.add(url);
+    sessionStorage.setItem("zap_single_sent", url);
+
+    updateStatusBanner("⚡ ZapDirect: Disparando mensagem automaticamente...");
+
+    setTimeout(() => {
+      const clicked = triggerSendAction();
+      if (clicked) {
+        updateStatusBanner("✅ ZapDirect: Mensagem enviada automaticamente com sucesso!", true);
+        console.log("[ZapDirect WhatsApp] Mensagem enviada no modo individual!");
+      } else {
+        // Segunda tentativa caso o botão demorou alguns milissegundos a mais
+        setTimeout(() => {
+          triggerSendAction();
+          updateStatusBanner("✅ ZapDirect: Mensagem enviada automaticamente!", true);
+        }, 800);
+      }
+
       setTimeout(() => {
-        triggerSendAction();
-        updateStatusBanner("✅ Mensagem enviada com sucesso!", true);
-      }, 1500);
+        isSingleSending = false;
+      }, 3000);
+    }, 700);
+  } else {
+    // Se a URL veio do ZapDirect com zap_auto=1 mas ainda está carregando o chat
+    if (url.includes("zap_auto=1") && !currentBanner) {
+      updateStatusBanner("⏳ ZapDirect: Carregando conversa no WhatsApp Web...");
     }
   }
 }
 
-// Inicia verificação contínua
-setInterval(checkAndProcessQueue, 1000);
+// Loop principal de verificação contínua
+function mainLoop() {
+  if (isCurrentTabRunner()) {
+    checkAndProcessQueue();
+  } else {
+    checkSingleUrlSend();
+  }
+}
+
+// Inicia verificação contínua a cada 600ms
+setInterval(mainLoop, 600);

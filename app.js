@@ -1215,14 +1215,20 @@ class ZapSalonsApp {
         }
       }
 
+      if (event.data.type === "ZAP_TIMER_TARGET_UPDATE" && event.data.payload) {
+        if (this.batchStatus === "running") {
+          this.startBatchCountdownTo(event.data.payload.targetTimestamp);
+        }
+      }
+
       if (event.data.type === "ZAP_CONTACT_SENT_UPDATE") {
         const sentData = event.data.payload;
         const contact = this.batchContacts.find(c => c.id === sentData.id || c.cleanPhone === sentData.cleanPhone);
         if (contact) {
           if (sentData.status === "skipped_invalid" || sentData.status === "skipped_timeout") {
             contact.status = "error";
-            contact.sentAt = sentData.status === "skipped_invalid" ? "Sem WhatsApp / Inválido" : "Tempo esgotado (16s)";
-            this.showToast(`⚠️ Contato ${contact.ownerName || contact.salonName} (${contact.cleanPhone}) pulado automaticamente (${contact.sentAt}).`, "warning");
+            contact.sentAt = sentData.status === "skipped_invalid" ? "Sem WhatsApp / Inválido" : "Tempo esgotado (25s)";
+            this.showToast(`⚠️ Contato ${contact.ownerName || contact.salonName} (${contact.cleanPhone}) pulado (${contact.sentAt}).`, "warning");
           } else {
             contact.status = "sent";
             contact.sentAt = sentData.timestamp || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -1248,6 +1254,12 @@ class ZapSalonsApp {
         if (nextPending) {
           nextPending.status = "sending";
           this.currentProcessingSalon.innerHTML = `Próximo: <strong>${nextPending.salonName}</strong> (+${nextPending.cleanPhone})`;
+          
+          // Inicia contagem regressiva local no painel ZapDirect
+          const intervalSecs = parseInt(this.batchIntervalSelect.value, 10) || 120;
+          this.startBatchCountdownTo(Date.now() + (intervalSecs * 1000));
+        } else {
+          this.stopBatchCountdown();
         }
 
         this.renderBatchTable();
@@ -1255,12 +1267,15 @@ class ZapSalonsApp {
       }
 
       if (event.data.type === "ZAP_BATCH_FINISHED") {
+        this.stopBatchCountdown();
         this.batchStatus = "idle";
         this.btnStartBatch.style.display = "inline-flex";
         this.btnStartBatch.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Reiniciar Disparos';
         this.btnPauseBatch.style.display = "none";
+        if (this.btnSendNextNow) this.btnSendNextNow.style.display = "none";
         this.timerPulseIcon.classList.remove("running");
         this.timerStatusLabel.textContent = "Todos os contatos foram enviados com sucesso!";
+        if (this.timerClockDisplay) this.timerClockDisplay.textContent = "00:00";
 
         // Garante que nenhum contato fique preso como sending
         this.batchContacts.forEach(c => {
@@ -1742,13 +1757,59 @@ class ZapSalonsApp {
     }
   }
 
+  startBatchCountdownTo(targetTimestamp) {
+    this.stopBatchCountdown();
+
+    if (this.btnSendNextNow) {
+      this.btnSendNextNow.style.display = "inline-flex";
+    }
+
+    const nextContact = this.batchContacts.find(c => c.status === "sending") ||
+                        this.batchContacts.find(c => c.status === "pending");
+    const nextName = nextContact ? (nextContact.ownerName || nextContact.salonName) : "próximo contato";
+
+    const tick = () => {
+      const now = Date.now();
+      const remainingSecs = Math.max(0, Math.ceil((targetTimestamp - now) / 1000));
+
+      if (this.timerClockDisplay) {
+        this.timerClockDisplay.textContent = this.formatTimeClock(remainingSecs);
+      }
+      if (this.timerStatusLabel) {
+        this.timerStatusLabel.innerHTML = `⏳ Intervalo anti-ban • Próximo: <strong>${nextName}</strong> (${remainingSecs}s)`;
+      }
+
+      if (now >= targetTimestamp) {
+        this.stopBatchCountdown();
+        if (this.timerStatusLabel) {
+          this.timerStatusLabel.innerHTML = `🚀 Abrindo WhatsApp de <strong>${nextName}</strong>...`;
+        }
+      }
+    };
+
+    tick();
+    this.batchCountdownInterval = setInterval(tick, 1000);
+  }
+
+  stopBatchCountdown() {
+    if (this.batchCountdownInterval) {
+      clearInterval(this.batchCountdownInterval);
+      this.batchCountdownInterval = null;
+    }
+    if (this.btnSendNextNow) {
+      this.btnSendNextNow.style.display = "none";
+    }
+  }
+
   pauseBatchQueue() {
+    this.stopBatchCountdown();
     this.batchStatus = "paused";
     window.postMessage({ type: "ZAP_PAUSE_BATCH" }, "*");
 
     this.btnStartBatch.style.display = "inline-flex";
     this.btnStartBatch.innerHTML = '<i class="fa-solid fa-play"></i> Continuar Disparos';
     this.btnPauseBatch.style.display = "none";
+    if (this.btnSendNextNow) this.btnSendNextNow.style.display = "none";
     this.timerPulseIcon.classList.remove("running");
     this.timerStatusLabel.textContent = "Fila Pausada";
 
@@ -1757,6 +1818,7 @@ class ZapSalonsApp {
   }
 
   skipBatchContact() {
+    this.stopBatchCountdown();
     window.postMessage({ type: "ZAP_SKIP_BATCH" }, "*");
 
     const currentSending = this.batchContacts.find(c => c.status === "sending");
@@ -1766,6 +1828,7 @@ class ZapSalonsApp {
     const nextPending = this.batchContacts.find(c => c.status === "pending");
     if (nextPending) {
       nextPending.status = "sending";
+      this.currentProcessingSalon.innerHTML = `Próximo: <strong>${nextPending.salonName}</strong> (+${nextPending.cleanPhone})`;
     }
 
     this.renderBatchTable();
@@ -1774,10 +1837,16 @@ class ZapSalonsApp {
   }
 
   sendNextBatchImmediately() {
-    this.skipBatchContact();
+    this.stopBatchCountdown();
+    window.postMessage({ type: "ZAP_FORCE_NEXT_NOW" }, "*");
+    if (this.timerStatusLabel) {
+      this.timerStatusLabel.textContent = "⚡ Carregando próximo contato imediatamente...";
+    }
+    this.showToast("⚡ Solicitado envio do próximo contato agora!", "info");
   }
 
   stopBatchQueue() {
+    this.stopBatchCountdown();
     this.batchStatus = "idle";
     window.postMessage({ type: "ZAP_STOP_BATCH" }, "*");
 
